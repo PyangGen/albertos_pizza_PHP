@@ -78,6 +78,36 @@ include 'sidebar.php';
   .content{
     margin-bottom: 40px;
   }
+  .pagination-container {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.pagination-container a {
+    display: inline-block;
+    margin: 0 5px;
+    padding: 8px 14px;
+    background-color: #f4f4f4;
+    color: #333;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.pagination-container a:hover {
+    background-color: #ffc9b3;
+    color: white;
+    border-color: #ffc9b3;
+}
+
+.pagination-container a.active {
+    background-color: #fb4a36;
+    color: white;
+    font-weight: bold;
+    border-color: #fb4a36;
+}
+
 </style>
 </head>
 
@@ -170,9 +200,29 @@ include 'sidebar.php';
           <button type="button" onclick="clearFilter()">Clear</button>
         </div>
       </div>
-      <table id="userTable">
-        <thead>
-          <tr>
+      <?php
+// Define items per page
+$itemsPerPage = 3;
+
+// Get the current page from the URL, default to 1 if not set
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+
+// Calculate the offset for the query
+$offset = ($page - 1) * $itemsPerPage;
+
+// Get the total number of rows in the database
+$totalResult = $conn->query("SELECT COUNT(*) AS count FROM reservations");
+$totalRows = $totalResult->fetch_assoc()['count'];
+$totalPages = ceil($totalRows / $itemsPerPage);
+
+// Fetch the reservations for the current page
+$sql = "SELECT * FROM reservations LIMIT $itemsPerPage OFFSET $offset";
+$result = $conn->query($sql);
+?>
+
+<table id="userTable">
+    <thead>
+        <tr>
             <th>NO</th>
             <th>Reserved At</th>
             <th>Email</th>
@@ -183,43 +233,65 @@ include 'sidebar.php';
             <th>Reserved Time</th>
             <th>Status</th>
             <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php
-          
-          if ($result->num_rows > 0) {
+        </tr>
+    </thead>
+    <tbody>
+        <?php
+        if ($result->num_rows > 0) {
             while ($row = $result->fetch_assoc()) {
-              echo "<tr>
-      <td>{$row['reservation_id']}</td>
-      <td>{$row['reservedAt']}</td>
-      <td>{$row['email']}</td>
-      <td>{$row['name']}</td>
-      <td>{$row['contact']}</td>
-      <td>{$row['noOfGuests']}</td>
-      <td>{$row['reservedDate']}</td>
-      <td>{$row['reservedTime']}</td>
-      <td>
-        <select id='status-{$row['reservation_id']}' onchange=\"updateStatus('{$row['reservation_id']}', this.value)\" class='status-select'>
-          <option value='Pending' " . ($row['status'] == 'Pending' ? 'selected' : '') . ">Pending</option>
-          <option value='Approved' " . ($row['status'] == 'Approved' ? 'selected' : '') . ">Approved</option>
-          <option value='On Process' " . ($row['status'] == 'On Process' ? 'selected' : '') . ">On Process</option>
-          <option value='Completed' " . ($row['status'] == 'Completed' ? 'selected' : '') . ">Completed</option>
-          <option value='Cancelled' " . ($row['status'] == 'Cancelled' ? 'selected' : '') . ">Cancelled</option>
-        </select>
-      </td>
-      <td>
-        <button id='editbtn' onclick='openEditReservationModal(this)' data-id='{$row['reservation_id']}' data-email='{$row['email']}' data-name='{$row['name']}' data-contact='{$row['contact']}' data-reservedDate='{$row['reservedDate']}' data-reservedTime='{$row['reservedTime']}' data-noOfGuests='{$row['noOfGuests']}' data-status='{$row['status']}'><i class='fas fa-edit'></i></button>
-        <button id='deletebtn' onclick=\"deleteItem('{$row['reservation_id']}')\"><i class='fas fa-trash'></i></button>
-      </td>
-    </tr>";
+                echo "<tr>
+                    <td>{$row['reservation_id']}</td>
+                    <td>{$row['reservedAt']}</td>
+                    <td>{$row['email']}</td>
+                    <td>{$row['name']}</td>
+                    <td>{$row['contact']}</td>
+                    <td>{$row['noOfGuests']}</td>
+                    <td>{$row['reservedDate']}</td>
+                    <td>{$row['reservedTime']}</td>
+                    <td>
+                        <select id='status-{$row['reservation_id']}' onchange=\"updateStatus('{$row['reservation_id']}', this.value)\" class='status-select'>
+                            <option value='Pending' " . ($row['status'] == 'Pending' ? 'selected' : '') . ">Pending</option>
+                            <option value='Approved' " . ($row['status'] == 'Approved' ? 'selected' : '') . ">Approved</option>
+                            <option value='On Process' " . ($row['status'] == 'On Process' ? 'selected' : '') . ">On Process</option>
+                            <option value='Completed' " . ($row['status'] == 'Completed' ? 'selected' : '') . ">Completed</option>
+                            <option value='Cancelled' " . ($row['status'] == 'Cancelled' ? 'selected' : '') . ">Cancelled</option>
+                        </select>
+                    </td>
+                    <td>
+                        <button id='editbtn' onclick='openEditReservationModal(this)' data-id='{$row['reservation_id']}' data-email='{$row['email']}' data-name='{$row['name']}' data-contact='{$row['contact']}' data-reservedDate='{$row['reservedDate']}' data-reservedTime='{$row['reservedTime']}' data-noOfGuests='{$row['noOfGuests']}' data-status='{$row['status']}'><i class='fas fa-edit'></i></button>
+                        <button id='deletebtn' onclick=\"deleteItem('{$row['reservation_id']}')\"><i class='fas fa-trash'></i></button>
+                    </td>
+                </tr>";
             }
-          } else {
+        } else {
             echo "<tr><td colspan='10' style='text-align: center;'>No Reservations Found</td></tr>";
-          }
-          ?>
-        </tbody>
-      </table>
+        }
+        ?>
+    </tbody>
+</table>
+
+<!-- Pagination -->
+<div class="pagination-container">
+    <?php
+    // Previous button
+    if ($page > 1) {
+        $prevPage = $page - 1;
+        echo "<a href='?page=$prevPage'>&laquo; Prev</a>";
+    }
+
+    // Numbered pages
+    for ($i = 1; $i <= $totalPages; $i++) {
+        $activeClass = ($i == $page) ? "active" : "";
+        echo "<a class='$activeClass' href='?page=$i'>$i</a>";
+    }
+
+    // Next button
+    if ($page < $totalPages) {
+        $nextPage = $page + 1;
+        echo "<a href='?page=$nextPage'>Next &raquo;</a>";
+    }
+    ?>
+</div>
 
 
     </div>

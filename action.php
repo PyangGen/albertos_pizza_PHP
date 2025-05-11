@@ -2,31 +2,32 @@
 session_start();
 require 'db_connection.php';
 
-// Check if the email session variable is set
 if (isset($_SESSION['email'])) {
     $email = $_SESSION['email'];
 
-    // Add products into the cart table
-    if (isset($_POST['pid']) && isset($_POST['pname']) && isset($_POST['pprice'])) {
+    // Add product into cart table
+    if (isset($_POST['pid'], $_POST['pname'], $_POST['pprice'], $_POST['psize'])) {
         $pid = $_POST['pid'];
         $pname = $_POST['pname'];
         $pprice = $_POST['pprice'];
+        $psize = $_POST['psize'];
         $pimage = $_POST['pimage'];
         $pcode = $_POST['pcode'];
         $pqty = 1;
 
         $total_price = $pprice * $pqty;
 
-        $stmt = $conn->prepare('SELECT itemName FROM cart WHERE itemName=? AND email=?');
-        $stmt->bind_param('ss', $pname, $email);
+        // Check if item with same name, size and email exists
+        $stmt = $conn->prepare('SELECT itemName FROM cart WHERE itemName=? AND size=? AND email=?');
+        $stmt->bind_param('sss', $pname, $psize, $email);
         $stmt->execute();
         $res = $stmt->get_result();
         $r = $res->fetch_assoc();
         $code = $r['itemName'] ?? '';
 
         if (!$code) {
-            $query = $conn->prepare('INSERT INTO cart (itemName, price, image, quantity, total_price, catName, email) VALUES (?, ?, ?, ?, ?, ?, ?)');
-            $query->bind_param('sdsisss', $pname, $pprice, $pimage, $pqty, $total_price, $pcode, $email);
+            $query = $conn->prepare('INSERT INTO cart (itemName, price, image, quantity, total_price, catName, size, email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+            $query->bind_param('sdsissss', $pname, $pprice, $pimage, $pqty, $total_price, $pcode, $psize, $email);
             $query->execute();
 
             echo '<div class="alert alert-success alert-dismissible mt-2" style="width: 300px; position: fixed; top: 50%; right: 50%; transform: translate(50%, -50%); z-index: 9999; padding-top: 40px; padding-bottom: 40px; font-size: 17px; text-align: center;">
@@ -41,7 +42,7 @@ if (isset($_SESSION['email'])) {
         }
     }
 
-    // Get no. of items available in the cart table
+    // Cart item counter
     if (isset($_GET['cartItem']) && $_GET['cartItem'] == 'cart_item') {
         $stmt = $conn->prepare('SELECT SUM(quantity) AS qty FROM cart WHERE email=?');
         $stmt->bind_param('s', $email);
@@ -49,16 +50,8 @@ if (isset($_SESSION['email'])) {
         $result = $stmt->get_result();
         $row = $result->fetch_assoc();
 
-        // Check if 'qty' is null and set to 0 if so
         $quantity = $row['qty'] !== null ? $row['qty'] : 0;
-
         echo $quantity;
     }
-
-    
-
-
-    
-   
-} 
+}
 ?>

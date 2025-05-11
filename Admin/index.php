@@ -225,7 +225,7 @@ include 'sidebar.php';
 
                 <div class="card-content">
                     <h4>Total Earning</h4>
-                    <h3>Rs <?php echo number_format($totalEarning); ?></h3>
+                    <h3>₱ <?php echo number_format($totalEarning); ?></h3>
                     <p class="<?php echo $totalEarningChange > 0 ? 'positive' : 'negative'; ?>">
                         <?php echo $totalEarningChange > 0 ? '▲' : '▼'; ?> <?php echo abs($totalEarningChange); ?>%
                     </p>
@@ -238,7 +238,7 @@ include 'sidebar.php';
             <div class="card" data-color="orange">
                 <div class="card-content">
                     <h4>Today's Earning</h4>
-                    <h3>Rs <?php echo number_format($todaysEarning); ?></h3>
+                    <h3>₱ <?php echo number_format($todaysEarning); ?></h3>
                     <p class="<?php echo $todaysEarningChange > 0 ? 'positive' : 'negative'; ?>">
                         <?php echo $todaysEarningChange > 0 ? '▲' : '▼'; ?> <?php echo abs($todaysEarningChange); ?>%
                     </p>
@@ -346,7 +346,7 @@ include 'sidebar.php';
                         echo '<td>' . htmlspecialchars($row["order_id"]) . '</td>';
                         echo '<td>' . htmlspecialchars($row["firstName"] . " " . $row["lastName"]) . '</td>';
                         echo '<td>' . htmlspecialchars($row["order_status"]) . '</td>';
-                        echo '<td>Rs ' . htmlspecialchars($row["grand_total"]) . '</td>';
+                        echo '<td>₱ ' . htmlspecialchars($row["grand_total"]) . '</td>';
                         echo '<td>';
                         echo '<button onclick=\'viewDetails(' . $row['order_id'] . ')\'>View Details</button>';
                         echo '</td>';

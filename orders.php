@@ -370,13 +370,13 @@ include 'db_connection.php';
         <div class="modal-content">
             <span class="modal-close">&times;</span>
             <h2>Submit Your Review</h2>
-            <form id="reviewForm" action="submit_reviews.php" method="POST">
+            <form id="reviewForm" action="submit_reviews.php" method="POST" enctype="multipart/form-data">
 
                 <input type="hidden" name="email" value="<?php echo $userEmail; ?>"> <!-- Hidden email field -->
                 <input type="hidden" id="reviewOrderId" name="orderId">
                 <!-- Display Stars -->
-                <div class="star-rating">
-                    <input type="radio" id="star5" name="rating" value="5" />
+                <div class="star-rating" >
+                    <input type="radio" id="star5" name="rating" value="5" required/>
                     <label for="star5" title="5 stars">&#9733;</label>
                     <input type="radio" id="star4" name="rating" value="4" />
                     <label for="star4" title="4 stars">&#9733;</label>
@@ -389,7 +389,10 @@ include 'db_connection.php';
                 </div>
                 <br>
                 <label for="reviewText">Review:</label>
-                <textarea id="reviewText" name="reviewText" rows="4" cols="50"></textarea>
+                <textarea id="reviewText" name="reviewText" rows="4" cols="50" required></textarea>
+                <!-- Video Upload -->
+    <label for="reviewVideo">Upload a video (optional):</label>
+    <input type="file" name="reviewVideo" id="reviewVideo" accept="video/*">
                 <br>
 
                 <br>
@@ -473,7 +476,7 @@ include_once ('footer.html');
                                 </div>
                                 <div class="customer-details">
                                     <div><p><strong>Address: </strong></p></div>
-                                    <div><p>${order.address}</p></div>
+                                    <div><p>${order.city}, ${order.barangay}, ${order.street}</p></div>
                                 </div>
                                 <div class="customer-details">
                                     <div><p><strong>Contact: </strong></p></div>
@@ -495,11 +498,11 @@ include_once ('footer.html');
                             <div class="order-items" style="font-size: 1.1rem;">
                                 ${order.items.map(item => `
                                     <div class="order-item">
-                                        <div>${item.itemName} (x${item.quantity})</div>
-                                        <div>${item.total_price}</div>
+                                        <div>${item.itemName}, ${item.size} (x${item.quantity})</div>
+                                        <div>₱ ${item.total_price}</div>
                                     </div>
                                 `).join('')}
-                                 <div class="order-total">Grand Total: ${order.grand_total}</div>
+                                 <div class="order-total">Grand Total: ₱  ${order.grand_total}</div>
                         ${order.order_status === 'Cancelled' ? `
                         <div class="review mt-3">
                         <div><p><strong>Cancellation Reason: </strong></div>

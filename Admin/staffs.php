@@ -48,6 +48,36 @@ include 'sidebar.php';
     #addUserModel .modal-container {
       height: 40rem;
     }
+    .pagination-container {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.pagination-container a {
+    display: inline-block;
+    margin: 0 5px;
+    padding: 8px 14px;
+    background-color: #f4f4f4;
+    color: #333;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.pagination-container a:hover {
+    background-color: #ffc9b3;
+    color: white;
+    border-color: #ffc9b3;
+}
+
+.pagination-container a.active {
+    background-color: #fb4a36;
+    color: white;
+    font-weight: bold;
+    border-color: #fb4a36;
+}
+
   </style>
 </head>
 
@@ -97,56 +127,101 @@ include 'sidebar.php';
 
     </div>
 
-    <table id="userTable">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Date Created</th>
-          <th>Email</th>
-          <th>Name</th>
-          <th>Contact</th>
-          <th>Role</th>
-          <th>Password</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <?php
-        // Modify the SQL query to include search functionality
-        $sql = "SELECT * FROM staff";
-        if (!empty($search)) {
-          $sql .= " WHERE email LIKE '%$search%' OR firstName LIKE '%$search%' OR lastName LIKE '%$search%'";
-        }
-        $result = $conn->query($sql);
-        if ($result->num_rows > 0) {
+    <?php
+// Include the database connection
+include 'db_connection.php';
 
-          while ($row = $result->fetch_assoc()) {
-            $passwordMasked = str_repeat('*', strlen($row['password']));
-            echo "<tr>
-                      <td>{$row['id']}</td>
-                      <td>{$row['createdAt']}</td>
-                      <td>{$row['email']}</td>
-                      <td>{$row['firstName']} {$row['lastName']}</td>
-                      <td>{$row['contact']}</td>
-                      <td>{$row['role']}</td>
-                      <td>
-                          <span class='password-masked'>{$passwordMasked}</span>
-                          <span class='password-visible' style='display: none;'>{$row['password']}</span>
-                          <i class='fas fa-eye-slash toggle-password' onclick='togglePassword(this)'></i>
-                      </td>
-                      <td>
-                          <button id='editbtn' onclick='openEditUserModal(this)' data-email='{$row['email']}' data-firstname='{$row['firstName']}' data-lastname='{$row['lastName']}' data-contact='{$row['contact']}' data-role='{$row['role']}' data-password='{$row['password']}'><i class='fas fa-edit'></i></button>
-                          <button id='deletebtn' onclick=\"deleteItem('{$row['email']}')\"><i class='fas fa-trash'></i></button>
-                      </td>
-                  </tr>";
-          }
+// Define items per page
+$itemsPerPage = 8;
+
+// Get the current page from the URL, default to 1 if not set
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+
+// Calculate the offset for the query
+$offset = ($page - 1) * $itemsPerPage;
+
+// Modify the SQL query to include pagination (no search)
+$sql = "SELECT * FROM staff LIMIT $itemsPerPage OFFSET $offset"; // Add LIMIT and OFFSET for pagination
+
+// Get total users count for pagination
+$totalResult = $conn->query("SELECT COUNT(*) AS count FROM staff");
+$totalRows = $totalResult->fetch_assoc()['count'];
+$totalPages = ceil($totalRows / $itemsPerPage);
+
+// Execute the query
+$result = $conn->query($sql);
+?>
+
+<table id="userTable">
+    <thead>
+        <tr>
+          
+            <th>Date Created</th>
+            <th>Email</th>
+            <th>Name</th>
+            <th>Contact</th>
+            <th>Role</th>
+            <th>Password</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php
+        if ($result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $passwordMasked = str_repeat('*', strlen($row['password']));
+                $formattedDate = date('F j, Y', strtotime($row['createdAt'])); // format date here
+                echo "<tr>
+                        
+                           <td>$formattedDate</td>
+                          <td>{$row['email']}</td>
+                          <td>{$row['firstName']} {$row['lastName']}</td>
+                          <td>{$row['contact']}</td>
+                          <td>{$row['role']}</td>
+                          <td>
+                              <span class='password-masked'>{$passwordMasked}</span>
+                              <span class='password-visible' style='display: none;'>{$row['password']}</span>
+                              <i class='fas fa-eye-slash toggle-password' onclick='togglePassword(this)'></i>
+                          </td>
+                          <td>
+                              <button id='editbtn' onclick='openEditUserModal(this)' data-email='{$row['email']}' data-firstname='{$row['firstName']}' data-lastname='{$row['lastName']}' data-contact='{$row['contact']}' data-role='{$row['role']}' data-password='{$row['password']}'><i class='fas fa-edit'></i></button>
+                              <button id='deletebtn' onclick=\"deleteItem('{$row['email']}')\"><i class='fas fa-trash'></i></button>
+                          </td>
+                      </tr>";
+            }
         } else {
-          echo "<tr><td colspan='8' style='text-align: center;'>No Users Found</td></tr>";
+            echo "<tr><td colspan='8' style='text-align: center;'>No Users Found</td></tr>";
         }
+
+        // Close the database connection
         $conn->close();
         ?>
-      </tbody>
-    </table>
+    </tbody>
+</table>
+
+<!-- Pagination -->
+<div class="pagination-container">
+    <?php
+    // Previous button
+    if ($page > 1) {
+        $prevPage = $page - 1;
+        echo "<a href='?page=$prevPage'>&laquo; Prev</a>";
+    }
+
+    // Numbered pages
+    for ($i = 1; $i <= $totalPages; $i++) {
+        $activeClass = ($i == $page) ? "active" : "";
+        echo "<a class='$activeClass' href='?page=$i'>$i</a>";
+    }
+
+    // Next button
+    if ($page < $totalPages) {
+        $nextPage = $page + 1;
+        echo "<a href='?page=$nextPage'>Next &raquo;</a>";
+    }
+    ?>
+</div>
+
   </div>
 
 

@@ -6,10 +6,65 @@ if (!isset($_SESSION['adminloggedin'])) {
 }
 
 include 'db_connection.php';
+
+$uploadSuccess = false;
+$uploadError = '';
+$imagePath = '';
+
+// Handle file upload
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['gcash_image'])) {
+    $imageName = uniqid('') . '.' . pathinfo($_FILES["gcash_image"]["name"], PATHINFO_EXTENSION);
+    $targetFile = $imageName;
+    $imageFileType = strtolower(pathinfo($targetFile, PATHINFO_EXTENSION));
+
+    $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'];
+    if (in_array($imageFileType, $allowedTypes)) {
+        if (move_uploaded_file($_FILES["gcash_image"]["tmp_name"], $targetFile)) {
+            $stmt = $conn->prepare("INSERT INTO gcash_images (image_path) VALUES (?)");
+            $stmt->bind_param("s", $targetFile);
+            $stmt->execute();
+            $stmt->close();
+
+            // Save success and image path in session, then redirect
+            $_SESSION['upload_success'] = true;
+            $_SESSION['uploaded_image'] = $targetFile;
+
+            header("Location: " . $_SERVER['PHP_SELF']);
+            exit();
+        } else {
+            $uploadError = "Failed to upload image.";
+        }
+    } else {
+        $uploadError = "Invalid file type. Allowed: jpg, jpeg, png, gif.";
+    }
+}
+
+// After redirect: Check if an upload was just completed
+if (isset($_SESSION['upload_success'])) {
+    $uploadSuccess = true;
+    $imagePath = $_SESSION['uploaded_image'];
+
+    // Clear session variables so refresh doesn't re-display message
+    unset($_SESSION['upload_success']);
+    unset($_SESSION['uploaded_image']);
+}
+
+// If no upload success, fetch the latest image from database
+if (!$uploadSuccess && empty($imagePath)) {
+    $result = $conn->query("SELECT image_path FROM gcash_images ORDER BY uploaded_at DESC LIMIT 1");
+    if ($row = $result->fetch_assoc()) {
+        $imagePath = $row['image_path'];
+    }
+}
+
+$conn->close();
 ?>
+
+
 <?php
 include 'sidebar.php';
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -22,11 +77,44 @@ include 'sidebar.php';
     <!--poppins-->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet" href="sidebar.css">
     <link rel="stylesheet" href="admin_menu.css">
 </head>
+<style>
+    .pagination-container {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.pagination-container a {
+  display: inline-block;
+  margin: 0 5px;
+  padding: 8px 14px;
+  background-color: #f4f4f4;
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.pagination-container a:hover {
+  background-color: #ffc9b3;
+  color: white;
+  border-color: #ffc9b3;
+}
+
+.pagination-container a.active {
+  background-color:#fb4a36;
+  color: white;
+  font-weight: bold;
+  border-color: #fb4a36;
+}
+</style>
 
 <body>
     <div class="sidebar">
@@ -37,7 +125,8 @@ include 'sidebar.php';
             <img src="../uploads/<?php echo htmlspecialchars($admin_info['profile_image']); ?>" alt="Profile Picture">
             <div class="info">
                 <h3>Welcome Back!</h3>
-                <p><?php echo htmlspecialchars($admin_info['firstName']) . ' ' . htmlspecialchars($admin_info['lastName']); ?></p>
+                <p><?php echo htmlspecialchars($admin_info['firstName']) . ' ' . htmlspecialchars($admin_info['lastName']); ?>
+                </p>
             </div>
         </div>
 
@@ -67,6 +156,7 @@ include 'sidebar.php';
             <div>
                 <button onclick="openModal()"><i class="fas fa-plus"></i> &nbsp;Add New Category</button>
                 <button onclick="openItemModal()"> <i class="fas fa-plus"></i> &nbsp;Add New Item</button>
+                <button onclick="openPayGcash()"> <i class="fas fa-plus"></i> &nbsp;Add Gcash</button>
                 <button onclick="openViewCategoryModal()"> <i class="fas fa-eye"></i> &nbsp;View Categories</button>
             </div>
             <div class="search-bar ">
@@ -85,86 +175,146 @@ include 'sidebar.php';
 
         </div>
 
-        <table id="menuTable">
-            <thead>
-                <tr>
-                    <th>Item Name</th>
-                    <th>Image</th>
-                    <th>Description</th>
-                    <th>Price</th>
-                    <th>Category</th>
-                    <th>Status</th>
-                    <th>Popular</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php
-                include 'db_connection.php';
-                $sql = "SELECT * FROM menuitem";
-                $result = mysqli_query($conn, $sql);
-                if (mysqli_num_rows($result) > 0) {
-                    while ($row = mysqli_fetch_assoc($result)) {
-                        $isPopularChecked = $row['is_popular'] ? 'checked' : '';
-                        echo "<tr data-category='{$row['catName']}'>
-                <td>{$row['itemName']}</td>
-                <td><img src='../uploads/{$row['image']}' alt='{$row['itemName']}' width='50'></td>
-                <td>{$row['description']}</td>
-                <td>Rs {$row['price']}</td>
-                <td>{$row['catName']}</td>
-                <td>{$row['status']}</td>
-                <td>
-                    <div class='toggler'>
-                        <input id='toggler-{$row['itemId']}' name='toggler-{$row['itemId']}' type='checkbox' value='1' $isPopularChecked onchange='togglePopular({$row['itemId']}, this)'>
-                        <label for='toggler-{$row['itemId']}'>
-                            <svg class='toggler-on' version='1.1' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 130.2 130.2'>
-                                <polyline class='path check' points='100.2,40.2 51.5,88.8 29.8,67.5'></polyline>
-                            </svg>
-                            <svg class='toggler-off' version='1.1' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 130.2 130.2'>
-                                <line class='path line' x1='34.4' y1='34.4' x2='95.8' y2='95.8'></line>
-                                <line class='path line' x1='95.8' y1='34.4' x2='34.4' y2='95.8'></line>
-                            </svg>
-                        </label>
-                    </div>
-                </td>
-                <td>
-                    <button id='editbtn' onclick='openEditItemModal(this)' data-itemid='{$row['itemId']}' data-itemname='{$row['itemName']}' data-description='{$row['description']}' data-price='{$row['price']}' data-image='{$row['image']}' data-category='{$row['catName']}' data-status='{$row['status']}'><i class='fas fa-edit'></i></button>  
-                    <button id='deletebtn'  onclick=\"deleteItem('" . $row["itemId"] . "')\"><i class='fas fa-trash'></i></button>
-                </td>
-              </tr>";
-                    }
-                } else {
-                    echo "<tr><td colspan='8' style='text-align: center;'>No menu items found</td></tr>";
+        <?php
+include 'db_connection.php';
+
+// Get current page from query string, default is 1
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$limit = 3; // Items per page
+$offset = ($page - 1) * $limit;
+
+// Get total number of menu items
+$totalQuery = "SELECT COUNT(*) AS total FROM menuitem";
+$totalResult = mysqli_query($conn, $totalQuery);
+$totalRow = mysqli_fetch_assoc($totalResult);
+$totalItems = $totalRow['total'];
+$totalPages = ceil($totalItems / $limit);
+
+// Retrieve paginated menu items
+$sql = "SELECT * FROM menuitem LIMIT $limit OFFSET $offset";
+$result = mysqli_query($conn, $sql);
+?>
+
+<table id="menuTable">
+    <thead>
+        <tr>
+            <th>Item Name</th>
+            <th>Image</th>
+            <th>Description</th>
+            <th>Sizes/Price</th>
+            <th>Category</th>
+            <th>Status</th>
+            <th>Popular</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php
+        if (mysqli_num_rows($result) > 0) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $isPopularChecked = $row['is_popular'] ? 'checked' : '';
+                $itemId = $row['itemId'];
+
+                // Get sizes for this item
+                $sizeQuery = "SELECT size, price FROM menuitem_sizes WHERE itemId = '$itemId'";
+                $sizeResult = mysqli_query($conn, $sizeQuery);
+                $sizesPrices = [];
+                while ($sizeRow = mysqli_fetch_assoc($sizeResult)) {
+                    $sizesPrices[] = $sizeRow;
                 }
-                ?>
 
-            </tbody>
-        </table>
+                echo "<tr data-category='{$row['catName']}'>
+                    <td>{$row['itemName']}</td>
+                    <td><img src='../uploads/{$row['image']}' alt='{$row['itemName']}' width='50'></td>
+                    <td>{$row['description']}</td>
+                    <td><ul>";
+                foreach ($sizesPrices as $size) {
+                    echo "<li>{$size['size']} - Rs {$size['price']}</li>";
+                }
+                echo "</ul></td>
+                    <td>{$row['catName']}</td>
+                    <td>{$row['status']}</td>
+                    <td>
+                        <div class='toggler'>
+                            <input id='toggler-{$row['itemId']}' name='toggler-{$row['itemId']}' type='checkbox' value='1' $isPopularChecked onchange='togglePopular({$row['itemId']}, this)'>
+                            <label for='toggler-{$row['itemId']}'>
+                                <!-- SVG icons here -->
+                            </label>
+                        </div>
+                    </td>
+                    <td>
+                        <button id='editbtn' onclick='openEditItemModal(this)'
+                            data-itemid='{$row['itemId']}'
+                            data-itemname='{$row['itemName']}'
+                            data-description='{$row['description']}'
+                            data-image='{$row['image']}'
+                            data-category='{$row['catName']}'
+                            data-status='{$row['status']}'
+                            data-sizes='" . htmlspecialchars(json_encode($sizesPrices), ENT_QUOTES, 'UTF-8') . "'>
+                            <i class='fas fa-edit'></i>
+                        </button>
+                        <button id='deletebtn' onclick=\"deleteItem('{$row["itemId"]}')\"><i class='fas fa-trash'></i></button>
+                    </td>
+                </tr>";
+            }
+        } else {
+            echo "<tr><td colspan='8' style='text-align: center;'>No menu items found</td></tr>";
+        }
+        ?>
+    </tbody>
+</table>
+
+<!-- Pagination Links -->
+<div class="pagination-container">
+    <?php if ($page > 1): ?>
+        <a href="?page=<?php echo $page - 1; ?>" class="pagination-link">&laquo; Prev</a>
+    <?php endif; ?>
+
+    <?php
+    for ($i = 1; $i <= $totalPages; $i++) {
+        $activeClass = ($i == $page) ? 'active' : '';
+        echo "<a href='?page=$i' class='pagination-link $activeClass'>$i</a>";
+    }
+    ?>
+
+    <?php if ($page < $totalPages): ?>
+        <a href="?page=<?php echo $page + 1; ?>" class="pagination-link">Next &raquo;</a>
+    <?php endif; ?>
+</div>
+
+
 
     </div>
-
     <div class="modal" id="categoryModal">
-        <div class="modal-overlay"></div>
-        <div class="modal-container">
-            <form class="form" method="POST" action="add_category.php">
-                <div class="modal-header">
-                    <h2>Add New Category</h2>
-                    <span class="close-icon" onclick="closeModal()">&times;</span>
+    <div class="modal-overlay"></div>
+    <div class="modal-container">
+        <form class="form" method="POST" action="add_category.php" onsubmit="return validateTimeRange()">
+            <div class="modal-header">
+                <h2>Add New Category</h2>
+                <span class="close-icon" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-content">
+                <div class="input-group">
+                    <input type="text" name="catName" id="catName" class="input" required>
+                    <label for="catName" class="label">Category Name</label>
                 </div>
-                <div class="modal-content">
-                    <div class="input-group">
-                        <input type="text" name="catName" id="catName" class="input" required>
-                        <label for="catName" class="label">Category Name</label>
-                    </div>
+                <div class="input-group">
+                    <input type="number" name="min_time" id="min_time" class="input" required min="1">
+                    <label for="min_time" class="label">Minimum Time (minutes)</label>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="button" onclick="closeModal()">Cancel</button>
-                    <button type="submit" class="button">Save</button>
+                <div class="input-group">
+                    <input type="number" name="max_time" id="max_time" class="input" required min="1">
+                    <label for="max_time" class="label">Maximum Time (minutes)</label>
                 </div>
-            </form>
-        </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="button" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="button">Save</button>
+            </div>
+        </form>
     </div>
-
+</div>
+    <!-- Add Item Modal -->
     <div class="modal" id="itemModal">
         <div class="modal-overlay"></div>
         <div class="modal-container">
@@ -190,11 +340,18 @@ include 'sidebar.php';
                         </select>
                         <label for="status" class="label">Status</label>
                     </div>
-
-                    <div class="input-group">
-                        <input type="number" name="price" id="price" class="input" required>
-                        <label for="price" class="label">Price</label>
+                    <!-- Multiple Sizes with Price and Checkbox -->
+                    <div class="input-group" id="sizesContainer">
+                        <label class="label">Sizes & Prices</label>
+                        <div class="size-entry ">
+                            <input type="checkbox" name="sizes[0][enabled]" value="1">
+                            <input type="text" name="sizes[0][size]" placeholder="Size (e.g. Small)" class="input"
+                                required>
+                            <input type="number" name="sizes[0][price]" placeholder="Price" class="input" step="0.01"
+                                required>
+                        </div>
                     </div>
+                    <button type="button" class="button" onclick="addSizeField()">+ Add Another Size</button>
                     <div class="input-group">
                         <select name="catName" id="catName" class="input" required>
                             <option value="">Select Category</option>
@@ -248,10 +405,18 @@ include 'sidebar.php';
                         </select>
                         <label for="editStatus" class="label">Status</label>
                     </div>
-                    <div class="input-group">
-                        <input type="number" name="price" id="editPrice" class="input" required>
-                        <label for="editPrice" class="label">Price</label>
+                    <!-- Multiple Sizes with Price and Checkbox -->
+                    <div class="input-group" id="editsizesContainer">
+                        <label class="label">Sizes & Prices</label>
+                        <div class="size-entry">
+                            <input type="checkbox" name="sizes[0][enabled]" value="1">
+                            <input type="text" name="sizes[0][size]" placeholder="Size (e.g. Small)" class="input"
+                                required>
+                            <input type="number" name="sizes[0][price]" placeholder="Price" class="input" step="0.01"
+                                required>
+                        </div>
                     </div>
+                    <button type="button" class="button" onclick="editaddSizeField()">+ Add Another Size</button>
                     <div class="input-group">
                         <select name="catName" id="editCatName" class="input" required>
                             <?php
@@ -292,17 +457,21 @@ include 'sidebar.php';
                         <thead>
                             <tr>
                                 <th>Category Name</th>
+                                <th>Min Time (minutes)</th>
+                                <th>Max Time (minutes)</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php
-                            $sql = "SELECT catName FROM menucategory";
+                            $sql = "SELECT catName, min_time, max_time FROM menucategory";
                             $result = mysqli_query($conn, $sql);
                             if (mysqli_num_rows($result) > 0) {
                                 while ($row = mysqli_fetch_assoc($result)) {
                                     echo "<tr>";
                                     echo "<td>{$row['catName']}</td>";
+                                    echo "<td>{$row['min_time']}</td>";
+                                    echo "<td>{$row['max_time']}</td>";
                                     echo "<td><button class='delete-btn' onclick=\"deleteCategory('{$row['catName']}')\"><i class='fas fa-trash'></i></button></td>";
                                     echo "</tr>";
                                 }
@@ -320,6 +489,41 @@ include 'sidebar.php';
         </div>
     </div>
 
+   <!-- Add Gcash Modal -->
+<div class="modal" id="addGcashModal">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h2>Add Gcash</h2>
+            <span class="close-icon" onclick="closePayGcash()">&times;</span>
+        </div>
+        <form action="admin_menu.php" method="POST" enctype="multipart/form-data">
+            <div class="modal-content">
+                <?php if (!empty($uploadError)): ?>
+                    <p style="color: red;"><?= $uploadError ?></p>
+                <?php endif; ?>
+
+                <?php if (!empty($imagePath)): ?>
+                    <div class="input-group">
+                        <label>Current Gcash QR:</label><br>
+                        <img src="<?= htmlspecialchars($imagePath) ?>" alt="GCash QR" style="width: 150px; border: 1px solid #ccc; padding: 4px; border-radius: 8px; margin-bottom: 10px;">
+
+                    </div>
+                <?php endif; ?>
+
+                <div class="input-group">
+                    <label for="gcash_image">Upload Gcash QR Image:</label><br>
+                    <input type="file" name="gcash_image" accept="image/*" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="button">Upload</button>
+                <button type="button" class="button" onclick="closePayGcash()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
     <script>
         function openViewCategoryModal() {
             document.getElementById('viewCategoryModal').classList.add('open');
@@ -335,7 +539,7 @@ include 'sidebar.php';
                 var xhr = new XMLHttpRequest();
                 xhr.open("POST", "delete_category.php", true);
                 xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-                xhr.onreadystatechange = function() {
+                xhr.onreadystatechange = function () {
                     if (xhr.readyState === XMLHttpRequest.DONE) {
                         if (xhr.status === 200) {
                             alert("Category deleted successfully.");
@@ -364,7 +568,7 @@ include 'sidebar.php';
             xhr.open("POST", "update_popular_status.php", true);
             xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
-            xhr.onreadystatechange = function() {
+            xhr.onreadystatechange = function () {
                 if (xhr.readyState === 4 && xhr.status === 200) {
                     var response = JSON.parse(xhr.responseText);
                     if (response.success) {
@@ -391,6 +595,8 @@ include 'sidebar.php';
         });
     </script>
     <script>
+        let sizeIndex = 1;
+
         function openModal() {
             document.getElementById('categoryModal').classList.add('open');
         }
@@ -406,27 +612,63 @@ include 'sidebar.php';
         function closeItemModal() {
             document.getElementById('itemModal').classList.remove('open');
         }
+        function openPayGcash() {
+        document.getElementById('addGcashModal').classList.add('open');
+    }
+
+    function closePayGcash() {
+        document.getElementById('addGcashModal').classList.remove('open');
+    }
+
+    <?php if ($uploadSuccess || isset($_POST['gcash_image'])): ?>
+        // Auto-open modal after upload
+        window.addEventListener('DOMContentLoaded', () => {
+            openPayGcash();
+        });
+    <?php endif; ?>
 
         function openEditItemModal(button) {
-            // Get item details from data attributes
-            var itemId = button.getAttribute('data-itemid');
-            var itemName = button.getAttribute('data-itemname');
-            var description = button.getAttribute('data-description');
-            var price = button.getAttribute('data-price');
-            var image = button.getAttribute('data-image');
-            var category = button.getAttribute('data-category');
-            var status = button.getAttribute('data-status');
+            // Get item details
+            const itemId = button.getAttribute('data-itemid');
+            const itemName = button.getAttribute('data-itemname');
+            const description = button.getAttribute('data-description');
+            const image = button.getAttribute('data-image');
+            const category = button.getAttribute('data-category');
+            const status = button.getAttribute('data-status');
 
-            // Set the modal fields
+            // Parse sizes JSON safely
+            let sizes = [];
+            try {
+                sizes = JSON.parse(button.getAttribute('data-sizes')) || [];
+            } catch (e) {
+                console.error("Invalid sizes JSON:", e);
+            }
+
+            // Set static modal fields
             document.getElementById('editItemId').value = itemId;
             document.getElementById('editItemName').value = itemName;
             document.getElementById('editDescription').value = description;
-            document.getElementById('editPrice').value = price;
             document.getElementById('editStatus').value = status;
             document.getElementById('editCatName').value = category;
-            document.getElementById('editExistingImage').value = image; // Set the existing image name
+            document.getElementById('editExistingImage').value = image;
 
-            // Display the modal
+            // Populate sizes dynamically
+            const container = document.getElementById('editsizesContainer');
+            container.innerHTML = ''; // Clear existing entries
+            sizeIndex = 1;
+
+            sizes.forEach((sizeObj, idx) => {
+                const entry = document.createElement("div");
+                entry.className = "size-entry";
+                entry.innerHTML = `
+                <input type="checkbox" name="sizes[${idx}][enabled]" value="1" checked>
+                <input type="text" name="sizes[${idx}][size]" value="${sizeObj.size}" placeholder="Size (e.g. Medium)" class="input" required>
+                <input type="number" name="sizes[${idx}][price]" value="${sizeObj.price}" placeholder="Price" class="input" step="0.01" required>
+            `;
+                container.appendChild(entry);
+                sizeIndex = idx + 1;
+            });
+
             document.getElementById('editItemModal').classList.add('open');
         }
 
@@ -434,16 +676,11 @@ include 'sidebar.php';
             document.getElementById('editItemModal').classList.remove('open');
         }
 
-
         function filterCategories() {
             const category = document.getElementById('categoryFilter').value;
             const rows = document.querySelectorAll('#menuTable tbody tr');
             rows.forEach(row => {
-                if (category === "" || row.dataset.category === category) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
+                row.style.display = (category === "" || row.dataset.category === category) ? '' : 'none';
             });
         }
 
@@ -456,7 +693,43 @@ include 'sidebar.php';
                 window.location.href = `delete_item.php?id=${itemId}`;
             }
         }
+
+        function addSizeField() {
+            const container = document.getElementById("sizesContainer");
+            const entry = document.createElement("div");
+            entry.className = "size-entry";
+            entry.innerHTML = `
+            <input type="checkbox" name="sizes[${sizeIndex}][enabled]" value="1">
+            <input type="text" name="sizes[${sizeIndex}][size]" placeholder="Size (e.g. Medium)" class="input" required>
+            <input type="number" name="sizes[${sizeIndex}][price]" placeholder="Price" class="input" step="0.01" required>
+        `;
+            container.appendChild(entry);
+            sizeIndex++;
+        }
+        function editaddSizeField() {
+            const container = document.getElementById("editsizesContainer");
+            const entry = document.createElement("div");
+            entry.className = "size-entry";
+            entry.innerHTML = `
+        <input type="checkbox" name="sizes[${sizeIndex}][enabled]" value="1">
+        <input type="text" name="sizes[${sizeIndex}][size]" placeholder="Size (e.g. Medium)" class="input" required>
+        <input type="number" name="sizes[${sizeIndex}][price]" placeholder="Price" class="input" step="0.01" required>
+    `;
+            container.appendChild(entry);
+            sizeIndex++;
+        }
+        function validateTimeRange() {
+    const minTime = parseInt(document.getElementById('min_time').value);
+    const maxTime = parseInt(document.getElementById('max_time').value);
+
+    if (minTime > maxTime) {
+        alert('Minimum time cannot be greater than maximum time.');
+        return false;
+    }
+    return true;
+}
     </script>
+
 
 
 </body>

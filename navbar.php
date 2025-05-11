@@ -243,7 +243,8 @@
   <div>
     <nav class="navbar navbar-expand-md fixed-top">
       <div class="container-fluid nav-container">
-        <a class="navbar-brand me-auto logo" href="index.php">Grill 'N' Chill</a>
+      <img src="uploads/logo1.png" alt="Logo" class="logo" style="width: 50px; height: 50px; margin-right: 10px;" />
+        <a class="navbar-brand me-auto logo" href="index.php">Alberto' Pizza</a>
         <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
           <div class="offcanvas-header">
             <h5 class="offcanvas-title" id="offcanvasNavbarLabel">

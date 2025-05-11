@@ -36,54 +36,97 @@
 	<div class="container">
 		<div class="forms-container">
 			<div class="signin-signup">
-				<form action="dblogin.php" class="sign-in-form" method="POST">
-					<h2 class="title">Sign in</h2>
-					<div class="input-field">
-						<i class="fas fa-envelope"></i>
-						<input type="email" placeholder="Email" name="email" required onkeyup="hideAlertBox()" />
-					</div>
-					<div class="input-field">
-						<i class="fas fa-lock"></i>
-						<input type="password" id="loginPassword" placeholder="Password" name="password" required onkeyup="hideAlertBox()" />
-						<i class="fas fa-eye-slash" id="toggleLoginPassword" style="cursor: pointer;"></i>
-					</div>
-					<input type="submit" value="Login" class="submit solid" id="loginButton" />
+      <form action="dblogin.php" class="sign-in-form" method="POST">
+  <h2 class="title">Sign in</h2>
 
-					<?php
+  <div class="input-field">
+    <i class="fas fa-envelope"></i>
+    <input type="email" placeholder="Email" name="email" required onkeyup="hideAlertBox()" oninput="this.value = this.value.replace(/^\s+/,'')" />
+  </div>
 
-					if (isset($_GET['error'])) {
-						echo ('
-	        <div class="alert alert-danger" id="alertbox" role="alert">
-	        Email or Password is incorrect.
-          </div>');
-					}
+  <div class="input-field">
+    <i class="fas fa-lock"></i>
+    <input type="password" id="loginPassword" placeholder="Password" name="password" required onkeyup="hideAlertBox()" oninput="this.value = this.value.replace(/^\s+/,'')" />
+    <i class="fas fa-eye-slash" id="toggleLoginPassword" style="cursor: pointer;"></i>
+  </div>
 
-					?>
+  <!-- Aligned left and clickable link -->
+  <div class="forgot-password" style="text-align: left; margin-top: 10px;">
+    <a href="forgot.php" style="color: #1860c3; text-decoration: none;">Forgot password?</a>
+  </div>
 
-				</form>
+  <input type="submit" value="Login" class="submit solid" id="loginButton" />
+
+  <?php
+  if (isset($_GET['error'])) {
+    echo ('
+      <div class="alert alert-danger" id="alertbox" role="alert">
+        Email or Password is incorrect.
+      </div>');
+  }
+  ?>
+</form>
+
 				<form action="dbregister.php" class="sign-up-form" method="POST" id="registerForm">
 					<h2 class="title">Sign up</h2>
 					<div class="input-field">
-						<i class="fas fa-user"></i>
-						<input type="text" placeholder="First Name" name="firstName" onkeyup="hideAlertBox()" required />
-					</div>
-					<div class="input-field">
-						<i class="fas fa-user"></i>
-						<input type="text" placeholder="Last Name" name="lastName" onkeyup="hideAlertBox()" required />
-					</div>
-					<div class="input-field">
-						<i class="fas fa-envelope"></i>
-						<input type="email" placeholder="Email" name="email" onkeyup="hideAlertBox()" required />
-					</div>
-					<div class="input-field">
-						<i class="fas fa-phone" style="transform: rotate(90deg);"></i>
-						<input type="text" placeholder="Contact No" name="contact" onkeyup="hideAlertBox()" required />
-					</div>
-					<div class="input-field">
-						<i class="fas fa-lock"></i>
-						<input type="password" id="registerPassword" placeholder="Password" name="password" required onkeyup="hideAlertBox()" />
-						<i class="fas fa-eye-slash" id="toggleRegisterPassword" style="cursor: pointer;"></i>
-					</div>
+  <i class="fas fa-user"></i>
+  <input type="text" placeholder="First Name" name="firstName" maxlength="16"
+         pattern="^[A-Za-z]{1,16}$"
+         title="Only letters allowed, up to 16 characters, no spaces or numbers"
+         oninput="this.value = this.value.replace(/[^A-Za-z]/g, '')"
+         required />
+</div>
+
+<div class="input-field">
+  <i class="fas fa-user"></i>
+  <input type="text" placeholder="Last Name" name="lastName" maxlength="16"
+         pattern="^[A-Za-z]{1,16}$"
+         title="Only letters allowed, up to 16 characters, no spaces or numbers"
+         oninput="this.value = this.value.replace(/[^A-Za-z]/g, '')"
+         required />
+</div>
+
+
+
+<div class="input-field">
+  <i class="fas fa-envelope"></i>
+  <input type="text" placeholder="Email" name="email"
+         pattern="^[A-Za-z0-9\.]{1,20}@gmail\.com$"
+         title="Username can have up to 20 alphanumeric characters and one dot (.) before @gmail.com"
+         oninput="validateEmail(this)"
+         required />
+</div>
+
+
+
+<div class="input-field" style="display: flex; align-items: center;">
+  <i class="fas fa-phone" style="transform: rotate(90deg); margin-right: 5px;"></i>
+  <span style="margin-right: 5px; font-weight: bold;color:gray">+63</span>
+  <input type="text" placeholder="Contact No" name="contact"
+         onkeyup="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 9);"
+         maxlength="9" pattern="\d{9}" required />
+</div>
+
+
+<div class="input-field">
+  <i class="fas fa-lock"></i>
+  <input type="password" id="registerPassword" placeholder="Password" name="password"
+         pattern="^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,10}$"
+         title="8-10 characters, must include uppercase, number, special character, and no spaces"
+         required oninput="checkPasswordMatch(); removeSpaces(this); hideAlertBox()" />
+  <i class="fas fa-eye-slash" id="toggleRegisterPassword" style="cursor: pointer;"></i>
+</div>
+
+<div class="input-field">
+  <i class="fas fa-lock"></i>
+  <input type="password" id="confirmPassword" placeholder="Confirm Password" name="confirm_password"
+         required oninput="checkPasswordMatch(); removeSpaces(this); hideAlertBox()" />
+  <i class="fas fa-eye-slash" id="toggleConfirmPassword" style="cursor: pointer;"></i>
+</div>
+
+<small id="passwordMismatch" style="color: red; display: none;">Passwords do not match.</small>
+
 					<input type="submit" class="submit" value="Sign up" id="registerButton" />
 
 
@@ -178,6 +221,57 @@ toggleRegisterPassword.addEventListener('click', function() {
 			const alertBox = document.getElementById('alertbox');
 			alertBox.style.display = 'none';
 		}
+    function validateEmail(input) {
+    let value = input.value
+        .replace(/^\s+/, '')                // Trim leading spaces
+        .replace(/[^A-Za-z0-9.@]/g, '')     // Allow only letters, numbers, dot, @
+        .replace(/\s/g, '');                // Remove all spaces
+
+    // Extract username part before @gmail.com
+    let username = value.split('@')[0];
+
+    // Only allow one dot in the username
+    let dotCount = (username.match(/\./g) || []).length;
+    if (dotCount > 1) {
+        username = username.replace(/\./g, (match, offset, string) => {
+            // Keep the first dot, remove the rest
+            return string.indexOf('.') === offset ? '.' : '';
+        });
+    }
+
+    // Trim to max 20 characters
+    username = username.slice(0, 20);
+
+    input.value = username + '@gmail.com';
+}
+
+function checkPasswordMatch() {
+  const password = document.getElementById('registerPassword').value;
+  const confirm = document.getElementById('confirmPassword').value;
+  const mismatchNotice = document.getElementById('passwordMismatch');
+
+  mismatchNotice.style.display = (confirm.length > 0 && password !== confirm) ? 'block' : 'none';
+}
+
+// Prevent spaces while typing
+function removeSpaces(input) {
+  input.value = input.value.replace(/\s/g, '');
+}
+
+// Toggle show/hide password
+document.getElementById("toggleRegisterPassword").onclick = function () {
+  const field = document.getElementById("registerPassword");
+  field.type = field.type === "password" ? "text" : "password";
+  this.classList.toggle("fa-eye");
+  this.classList.toggle("fa-eye-slash");
+};
+
+document.getElementById("toggleConfirmPassword").onclick = function () {
+  const field = document.getElementById("confirmPassword");
+  field.type = field.type === "password" ? "text" : "password";
+  this.classList.toggle("fa-eye");
+  this.classList.toggle("fa-eye-slash");
+};
 	</script>
 
 </body>

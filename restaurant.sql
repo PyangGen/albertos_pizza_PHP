@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 10, 2024 at 10:51 PM
+-- Generation Time: May 08, 2025 at 03:09 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -35,17 +35,46 @@ CREATE TABLE `cart` (
   `quantity` int(11) NOT NULL,
   `catName` varchar(255) NOT NULL,
   `email` varchar(255) NOT NULL,
-  `total_price` varchar(255) NOT NULL
+  `total_price` varchar(255) NOT NULL,
+  `size` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `cart`
 --
 
-INSERT INTO `cart` (`id`, `itemName`, `price`, `image`, `quantity`, `catName`, `email`, `total_price`) VALUES
-(1, 'French Fries', 760, 'fries.jpg', 1, 'Appetizer', 'asna@gmail.com', '760'),
-(2, 'BBQ Chicken Pizza', 1000, 'bbq-pizza.jpg', 1, 'Pizza', 'zidnan@gmail.com', '1000'),
-(3, 'Strawberry Mocktail', 550, 'strawberry-drink.png', 2, 'Beverage', 'zidnan@gmail.com', '1100');
+INSERT INTO `cart` (`id`, `itemName`, `price`, `image`, `quantity`, `catName`, `email`, `total_price`, `size`) VALUES
+(1, 'French Fries', 760, 'fries.jpg', 1, 'Appetizer', 'asna@gmail.com', '760', NULL),
+(2, 'BBQ Chicken Pizza', 1000, 'bbq-pizza.jpg', 1, 'Pizza', 'zidnan@gmail.com', '1000', NULL),
+(3, 'Strawberry Mocktail', 550, 'strawberry-drink.png', 2, 'Beverage', 'zidnan@gmail.com', '1100', NULL),
+(166, 'Pizza Bianca', 120, 'PIZZABIANCA_3ddc317e-0d34-40c0-bfe8-ef786e979378_800x.webp', 1, 'Pizza', 'jhon@gmail.com', '120', '9'),
+(167, 'Pizza Bianca', 120, 'PIZZABIANCA_3ddc317e-0d34-40c0-bfe8-ef786e979378_800x.webp', 1, 'Pizza', 'admin@gmail.com', '120', '9'),
+(179, 'Alfredo', 150, 'alfredo-sp.png', 1, 'Pizza', 'marites@gmail.com', '150', '9'),
+(180, 'IL Supremo!', 210, 'ILSUPREMO_c5e4cdd1-1e78-4b12-a2c3-b891924987af_800x.webp', 1, 'Pizza', 'marites@gmail.com', '210', '11'),
+(182, 'IL Supremo!', 170, 'ILSUPREMO_c5e4cdd1-1e78-4b12-a2c3-b891924987af_800x.webp', 1, 'Pizza', 'almafepepana@gmail.com', '170', '9'),
+(183, 'IL Supremo!', 210, 'ILSUPREMO_c5e4cdd1-1e78-4b12-a2c3-b891924987af_800x.webp', 1, 'Pizza', 'almafepepana@gmail.com', '210', '11');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `gcash_images`
+--
+
+CREATE TABLE `gcash_images` (
+  `id` int(11) NOT NULL,
+  `image_path` varchar(255) NOT NULL,
+  `uploaded_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `gcash_images`
+--
+
+INSERT INTO `gcash_images` (`id`, `image_path`, `uploaded_at`) VALUES
+(38, '681756d93479c.jpg', '2025-05-04 12:00:25'),
+(39, '6817574f14ce4.jpg', '2025-05-04 12:02:23'),
+(40, '681757559a854.jpg', '2025-05-04 12:02:29'),
+(41, '68180e9d712fd.png', '2025-05-05 01:04:29');
 
 -- --------------------------------------------------------
 
@@ -56,18 +85,20 @@ INSERT INTO `cart` (`id`, `itemName`, `price`, `image`, `quantity`, `catName`, `
 CREATE TABLE `menucategory` (
   `catId` int(11) NOT NULL,
   `catName` varchar(255) NOT NULL,
-  `dateCreated` timestamp NOT NULL DEFAULT current_timestamp()
+  `dateCreated` timestamp NOT NULL DEFAULT current_timestamp(),
+  `min_time` int(11) DEFAULT NULL COMMENT 'Minimum estimated time in minutes',
+  `max_time` int(11) DEFAULT NULL COMMENT 'Maximum estimated time in minutes'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `menucategory`
 --
 
-INSERT INTO `menucategory` (`catId`, `catName`, `dateCreated`) VALUES
-(1, 'Appetizer', '2024-07-26 12:31:55'),
-(2, 'Burger', '2024-07-26 12:31:55'),
-(3, 'Pizza', '2024-07-26 12:33:18'),
-(4, 'Beverage', '2024-07-26 12:33:18');
+INSERT INTO `menucategory` (`catId`, `catName`, `dateCreated`, `min_time`, `max_time`) VALUES
+(14, 'Pizza', '2025-05-04 12:05:30', 15, 20),
+(15, 'Shakes', '2025-05-04 12:24:17', 5, 10),
+(16, 'Tea', '2025-05-04 12:33:07', NULL, NULL),
+(17, 'Halo-Halo', '2025-05-04 12:34:54', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -93,22 +124,58 @@ CREATE TABLE `menuitem` (
 --
 
 INSERT INTO `menuitem` (`itemId`, `itemName`, `catName`, `price`, `status`, `description`, `image`, `dateCreated`, `updatedDate`, `is_popular`) VALUES
-(3, 'French Fries', 'Appetizer', '760', 'Unavailable', ' Crispy, golden-brown fries seasoned to perfection, served with your choice of dipping sauces.', 'fries.jpg', '2024-07-26 09:09:35', '2024-07-26 14:39:35', 0),
-(5, 'Veggie Supreme Pizza', 'Pizza', '800', 'Available', 'Our Veggie Supreme Pizza, is loaded with a colorful array of seasonal vegetables, rich tomato sauce, and a generous layer of gooey cheese.', 'veggie-pizza.jpg', '2024-07-26 09:10:36', '2024-07-26 14:40:36', 1),
-(6, 'Prawn Pizza', 'Pizza', '1200', 'Available', 'Dive into our Prawn Pizza, topped with succulent, seasoned prawns, tangy tomato sauce, and a blend of melted cheeses.', 'prawn-piza.jpg', '2024-07-26 09:12:03', '2024-07-26 14:42:03', 0),
-(7, 'Cheese Pizza', 'Pizza', '800', 'Unavailable', 'Indulge in the classic simplicity of our Cheese Pizza, topped with a generous layer of gooey mozzarella and a perfectly seasoned tomato sauce.', 'cheese-pizza.jpg', '2024-07-26 09:13:09', '2024-07-26 14:43:09', 1),
-(8, 'BBQ Chicken Pizza', 'Pizza', '1000', 'Available', 'Savor the smoky goodness of our BBQ Chicken Pizza, featuring tender chicken pieces smothered in barbecue sauce.', 'bbq-pizza.jpg', '2024-07-26 09:13:45', '2024-07-26 14:43:45', 0),
-(9, 'Firebird Burger', 'Burger', '2100', 'Available', 'Crispy fried chicken breast, shredded iceberg lettuce, melted white cheddar, topped with our spicy mayo and sauces on a toasted bun.', 'firebird-burger.jpeg', '2024-08-03 14:37:51', '2024-08-03 16:37:09', 0),
-(10, 'Hybrid Burger', 'Burger', '1800', 'Available', 'Crispy chicken breast, melted white cheddar, char-grilled beef patty, chicken bacon with our signature sauces on a toasted bun.', 'hybrid-burger.jpeg', '2024-08-03 15:07:32', '2024-08-03 17:07:01', 1),
-(11, 'BBQ Chicken Burger', 'Burger', '1900', 'Available', 'Char-grilled beef patty, iceberg lettuce, red onions, melted white cheddar, BBQ sauce topped with our sauces on a toasted bun. ', 'bbq-burger.jpeg', '2024-08-03 15:09:50', '2024-08-03 17:07:34', 1),
-(12, 'Crispy Chicken Burger', 'Burger', '1900', 'Unavailable', 'Marinated crispy fried chicken breast, cheddar cheese, shredded iceberg lettuce topped with our signature mayo and sauces on a toasted bun', 'crispy-burger.jpeg', '2024-08-03 15:21:27', '2024-08-03 17:20:42', 0),
-(13, 'Strawberry Mocktail', 'Beverage', '550', 'Available', 'Refreshingly sweet and tangy, this Strawberry Mocktail blends ripe strawberries with a splash of citrus, creating a vibrant.', 'strawberry-drink.png', '2024-08-03 14:18:11', '2024-08-03 16:09:51', 0),
-(14, 'Orange Sizzler', 'Beverage', '350', 'Available', 'Enjoy the zing of our Orange Sizzler, a mix of fresh orange juice with a fizzy twist, perfect for adding a burst of to your day.', 'orange-drink.png', '2024-08-03 14:24:49', '2024-08-03 16:24:05', 1),
-(15, 'Dragon Fruit Mojito', 'Beverage', '760', 'Available', 'Experience a tropical twist with our Dragon Fruit Mojito, featuring exotic dragon fruit, mint, and lime, all muddled together.', 'Dragon-fruit-drink.png', '2024-08-03 14:25:57', '2024-08-03 16:24:54', 0),
-(16, 'Watermelon Smoothie', 'Beverage', '400', 'Available', 'A blend of juicy watermelon and a hint of lime, delivering a hydrating and deliciously fruity escape from the heat.', 'watermelon-drink.png', '2024-08-03 14:26:56', '2024-08-03 16:26:00', 0),
-(33, 'Garlic Bread', 'Appetizer', '350', 'Available', 'Golden, toasted bread topped with buttery garlic and herbs. Crispy and savory, perfect for starting your meal.', 'garlic-bread.avif', '2024-08-08 16:37:43', '2024-08-08 22:07:43', 1),
-(34, 'Chicken Wing', 'Appetizer', '480', 'Available', 'Tender, juicy chicken wings tossed in your choice of flavorful sauces. Perfectly crispy on the outside and succulent on the inside.', 'chicken-wing.avif', '2024-08-08 16:43:59', '2024-08-08 22:13:59', 0),
-(35, 'Samosa', 'Appetizer', '120', 'Available', 'Crispy, golden-brown samosas filled with a savory blend of spiced potatoes and peas.', 'samosa.avif', '2024-08-08 16:45:44', '2024-08-08 22:15:44', 0);
+(43, 'Mushroom & Truffle Pizza', 'Pizza', '', 'Available', 'Truffle, porcini, shiitake, and button mushrooms with mozzarella on signature dough, drizzled with truffle oil.', '3MUSHROOM_TRUFFLE_800x.webp', '2025-05-04 12:05:51', '2025-05-04 20:05:51', 1),
+(44, 'Pizza Bianca', 'Pizza', '', 'Available', 'Ricotta, mozzarella, and parmesan topped with fresh arugula on our classic dough.', 'PIZZABIANCA_3ddc317e-0d34-40c0-bfe8-ef786e979378_800x.webp', '2025-05-04 12:07:21', '2025-05-04 20:07:21', 1),
+(45, 'IL Supremo!', 'Pizza', '', 'Available', 'A hearty mix of meats, veggies, and cheeses loaded on one flavorful pizza.', 'ILSUPREMO_c5e4cdd1-1e78-4b12-a2c3-b891924987af_800x.webp', '2025-05-04 12:08:25', '2025-05-04 20:08:25', 1),
+(46, 'Alfredo', 'Pizza', '', 'Available', 'A creamy and savory delight topped with rich Alfredo sauce, mozzarella, and tender chicken slices.', 'alfredo-sp.png', '2025-05-04 12:12:31', '2025-05-04 20:12:31', 0),
+(47, 'BBQ Chicken Pizza', 'Pizza', '', 'Available', 'Sweet and smoky barbecue sauce meets juicy chicken and cheese for a bold, satisfying bite.', 'bbq-chicken-sp.png', '2025-05-04 12:14:55', '2025-05-04 20:14:55', 0),
+(48, 'Cheese Pizza', 'Pizza', '', 'Available', 'A classic favorite loaded with gooey, melted cheese over a perfectly crisp crust.', 'cheese.png', '2025-05-04 12:15:36', '2025-05-04 20:15:36', 0),
+(49, 'Classic Chicken Pizza', 'Pizza', '', 'Available', ' Simple yet flavorful, featuring seasoned chicken, cheese, and Alberto’s signature sauce.', 'classic-chicken.png', '2025-05-04 12:16:12', '2025-05-04 20:16:12', 0),
+(50, 'Giant Pizza', 'Pizza', '', 'Available', 'A massive feast packed with assorted premium toppings, perfect for sharing and satisfying big cravings.', 'giant-sp.png', '2025-05-04 12:16:47', '2025-05-04 20:16:47', 0),
+(51, 'Hawaiian Pizza', 'Pizza', '', 'Available', 'A tropical twist of sweet pineapple and savory ham on a cheesy, golden crust.', 'hawaiian-sp.png', '2025-05-04 12:17:18', '2025-05-04 20:17:18', 1),
+(52, 'Pepperoni Pizza ', 'Pizza', '', 'Available', 'A timeless classic layered with spicy, crispy pepperoni and bubbling cheese.', 'pepperoni-and-beef-sp.png', '2025-05-04 12:17:55', '2025-05-04 20:17:55', 1),
+(53, 'Zesty Ham and Cheddar Pizza ', 'Pizza', '', 'Available', 'A sharp, flavorful combo of cheddar cheese and zesty ham for a tangy, hearty slice.', 'zesty-ham-and-cheddar-sp.png', '2025-05-04 12:18:32', '2025-05-04 20:18:32', 0),
+(54, 'Frutas Milk Shakes', 'Shakes', '', 'Available', 'Creamy milkshakes blended with pure, real fruits for a naturally refreshing and delicious treat.', 'VISMIN-MilkShakes-2024.jpg', '2025-05-04 12:28:01', '2025-05-04 20:28:01', 0),
+(55, 'Choco Shakes', 'Shakes', '', 'Available', 'Rich and creamy choco shakes made with real chocolate and blended to smooth perfection for a sweet, indulgent treat.', 'VISMIN-ChocoOreoMocha-2024.jpg', '2025-05-04 12:29:19', '2025-05-04 20:29:19', 0),
+(56, 'Mango Graham Shake', 'Shakes', '', 'Available', 'A tropical blend of ripe mangoes and crushed grahams, layered with creamy milk for a sweet and satisfying shake.', 'VISMIN-MangoGraham-2024.jpg', '2025-05-04 12:30:36', '2025-05-04 20:30:36', 0),
+(57, 'Calamansi Shake', 'Shakes', '', 'Available', ' zesty, refreshing blend of fresh calamansi juice and ice for a tangy tropical cool-down.', 'VISMIN-Cucumber-Juice-2024.jpg', '2025-05-04 12:32:46', '2025-05-04 20:32:46', 0),
+(58, 'Milk Tea', 'Tea', '', 'Unavailable', 'Classic milk tea brewed with rich black tea and creamy milk, served chilled for a smooth and refreshing sip.', 'VISMIN-MilkTeaPlus-2024.jpg', '2025-05-04 12:34:20', '2025-05-04 20:34:20', 0),
+(59, 'Halo-halo Special', 'Halo-Halo', '', 'Available', 'A colorful blend of shaved ice, sweet beans, jellies, fruits, leche flan, and ube, topped with creamy ice cream for a classic Filipino delight.', 'VISMIN-SundaeHalo2x-2024.jpg', '2025-05-04 12:37:53', '2025-05-04 20:37:53', 0);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `menuitem_sizes`
+--
+
+CREATE TABLE `menuitem_sizes` (
+  `id` int(11) NOT NULL,
+  `itemId` int(11) NOT NULL,
+  `size` varchar(100) NOT NULL,
+  `price` decimal(10,2) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `menuitem_sizes`
+--
+
+INSERT INTO `menuitem_sizes` (`id`, `itemId`, `size`, `price`) VALUES
+(28, 46, '9', 150.00),
+(29, 47, '9', 160.00),
+(30, 47, '11\"', 190.00),
+(31, 48, '9', 160.00),
+(32, 49, '9', 180.00),
+(33, 50, '9', 160.00),
+(34, 51, '9', 150.00),
+(35, 53, '9', 150.00),
+(38, 43, '11\'', 200.00),
+(39, 44, '9', 120.00),
+(40, 45, '9', 170.00),
+(41, 45, '11', 210.00),
+(42, 55, '16oz', 60.00),
+(43, 57, 'bottle', 40.00),
+(44, 58, '16oz', 70.00),
+(45, 59, '16oz', 75.00);
 
 -- --------------------------------------------------------
 
@@ -122,8 +189,11 @@ CREATE TABLE `orders` (
   `firstName` varchar(255) NOT NULL,
   `lastName` varchar(255) NOT NULL,
   `phone` varchar(10) NOT NULL,
-  `address` varchar(200) NOT NULL,
-  `pmode` enum('Cash','Card','Takeaway','') NOT NULL DEFAULT 'Cash',
+  `city` varchar(100) NOT NULL,
+  `barangay` varchar(100) NOT NULL,
+  `street` varchar(255) NOT NULL,
+  `pmode` enum('COD','Gcash','Pick_up','') NOT NULL DEFAULT 'COD',
+  `image` varchar(255) DEFAULT NULL,
   `payment_status` enum('Pending','Successful','Rejected','') NOT NULL DEFAULT 'Pending',
   `sub_total` decimal(10,2) NOT NULL,
   `grand_total` decimal(10,2) NOT NULL,
@@ -137,12 +207,16 @@ CREATE TABLE `orders` (
 -- Dumping data for table `orders`
 --
 
-INSERT INTO `orders` (`order_id`, `email`, `firstName`, `lastName`, `phone`, `address`, `pmode`, `payment_status`, `sub_total`, `grand_total`, `order_date`, `order_status`, `cancel_reason`, `note`) VALUES
-(54, 'preethi@gmail.com', 'Preethi', 'Suresh', '9999999999', 'Galle Road', 'Cash', 'Pending', 1910.00, 2040.00, '2024-08-11 18:00:04', 'Processing', '', 'Add extra cheese'),
-(55, 'zidnan@gmail.com', 'Zidnan', 'Ahamad', '2222222222', 'Kolonnawa', 'Cash', 'Pending', 7420.00, 7550.00, '2024-08-10 18:02:26', 'On the way', '', 'Please make the Burger extra spicy'),
-(56, 'zidnan@gmail.com', 'Mohamed', 'Muhadh', '0000000000', 'Kolonnawa', 'Takeaway', 'Successful', 1150.00, 1150.00, '2024-08-11 18:04:16', 'Completed', '', ''),
-(57, 'jhon@gmail.com', 'Jhon', 'Paul', '7777777777', 'Colombo 15', 'Takeaway', 'Successful', 5720.00, 5720.00, '2024-08-08 18:05:26', 'Completed', '', ''),
-(58, 'zidnan@gmail.com', 'Zidnan', 'Ahamad', '4444444444', 'Colombo 12', 'Takeaway', 'Pending', 2700.00, 2700.00, '2024-08-10 20:12:14', 'Cancelled', 'Waiting time is too long.', '');
+INSERT INTO `orders` (`order_id`, `email`, `firstName`, `lastName`, `phone`, `city`, `barangay`, `street`, `pmode`, `image`, `payment_status`, `sub_total`, `grand_total`, `order_date`, `order_status`, `cancel_reason`, `note`) VALUES
+(56, 'zidnan@gmail.com', 'Mohamed', 'Muhadh', '0000000000', '', '', '', '', NULL, 'Successful', 1150.00, 1150.00, '2024-08-11 18:04:16', 'Completed', '', ''),
+(57, 'jhon@gmail.com', 'Jhon', 'Paul', '7777777777', '', '', '', '', NULL, 'Rejected', 5720.00, 5720.00, '2024-08-08 18:05:26', 'Completed', '', ''),
+(76, 'jhon@gmail.com', 'fdfds', 'fds', 'fdfs', '', '', '', 'Pick_up', NULL, 'Rejected', 2875.00, 2875.00, '2025-05-04 09:48:17', 'Cancelled', 'gfdgf', 'fdsdf'),
+(86, 'daniel@gmail.com', 'Daniel', 'Padilla', '978787878', '', '', '', 'Gcash', 'VISMIN-SundaeHalo2x-2024.jpg', 'Successful', 210.00, 340.00, '2025-05-05 01:03:22', 'Completed', '', 'please'),
+(87, 'daniel@gmail.com', 'ivan', 'sestual', '097777773', '', '', '', 'COD', '', 'Pending', 170.00, 220.00, '2025-05-05 02:34:37', 'Cancelled', 'way inyong pizza', 'way lami'),
+(88, 'daniel@gmail.com', 'Jade', 'Alipan', '099797979', '', '', '', 'COD', '', 'Pending', 170.00, 220.00, '2025-05-05 02:40:20', 'Pending', NULL, 'sasdasdadasd'),
+(89, 'daniel@gmail.com', 'Jhon', 'Cuadra', '979787777', '', '', '', 'Gcash', '68180e9d712fd (2).png', 'Pending', 210.00, 260.00, '2025-05-05 03:27:47', 'Cancelled', 'dsa', 'wala'),
+(90, 'daniel@gmail.com', 'teter', 'tretre', '587999999', 'Mandaue City, 6014', 'Ibabao-Estancia', 'gfgfd', 'Pick_up', '', 'Pending', 120.00, 120.00, '2025-05-06 16:06:41', 'Cancelled', 'fdsfsd', 'rere'),
+(91, 'marites@gmail.com', 'Marites', 'Quivedo', '987878787', 'Mandaue City, 6014', 'Banilad', 'maguikay', 'Gcash', 'download (5).jpg', 'Pending', 380.00, 430.00, '2025-05-07 03:46:03', 'Cancelled', 'wala lang', 'please lang');
 
 -- --------------------------------------------------------
 
@@ -157,26 +231,36 @@ CREATE TABLE `order_items` (
   `image` varchar(255) NOT NULL,
   `quantity` int(11) NOT NULL,
   `price` decimal(10,0) NOT NULL,
-  `total_price` decimal(10,2) NOT NULL
+  `total_price` decimal(10,2) NOT NULL,
+  `size` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `order_items`
 --
 
-INSERT INTO `order_items` (`id`, `order_id`, `itemName`, `image`, `quantity`, `price`, `total_price`) VALUES
-(122, 54, 'Garlic Bread', 'garlic-bread.avif', 1, 350, 350.00),
-(123, 54, 'French Fries', 'fries.jpg', 1, 760, 760.00),
-(124, 54, 'Cheese Pizza', 'cheese-pizza.jpg', 1, 800, 800.00),
-(125, 55, 'Dragon Fruit Mojito', 'Dragon-fruit-drink.png', 1, 760, 760.00),
-(126, 55, 'BBQ Chicken Burger', 'bbq-burger.jpeg', 3, 1900, 5700.00),
-(127, 55, 'Chicken Wing', 'chicken-wing.avif', 2, 480, 960.00),
-(128, 56, 'Garlic Bread', 'garlic-bread.avif', 1, 350, 350.00),
-(129, 56, 'Cheese Pizza', 'cheese-pizza.jpg', 1, 800, 800.00),
-(130, 57, 'French Fries', 'fries.jpg', 2, 760, 1520.00),
-(131, 57, 'Firebird Burger', 'firebird-burger.jpeg', 2, 2100, 4200.00),
-(132, 58, 'Garlic Bread', 'garlic-bread.avif', 3, 350, 1050.00),
-(133, 58, 'Strawberry Mocktail', 'strawberry-drink.png', 3, 550, 1650.00);
+INSERT INTO `order_items` (`id`, `order_id`, `itemName`, `image`, `quantity`, `price`, `total_price`, `size`) VALUES
+(161, 86, 'IL Supremo!', 'ILSUPREMO_c5e4cdd1-1e78-4b12-a2c3-b891924987af_800x.webp', 1, 210, 210.00, '11'),
+(162, 87, 'IL Supremo!', 'ILSUPREMO_c5e4cdd1-1e78-4b12-a2c3-b891924987af_800x.webp', 1, 170, 170.00, '9'),
+(163, 88, 'IL Supremo!', 'ILSUPREMO_c5e4cdd1-1e78-4b12-a2c3-b891924987af_800x.webp', 1, 170, 170.00, '9'),
+(164, 89, 'IL Supremo!', 'ILSUPREMO_c5e4cdd1-1e78-4b12-a2c3-b891924987af_800x.webp', 1, 210, 210.00, '11'),
+(165, 90, 'Pizza Bianca', 'PIZZABIANCA_3ddc317e-0d34-40c0-bfe8-ef786e979378_800x.webp', 1, 120, 120.00, '9'),
+(166, 91, 'IL Supremo!', 'ILSUPREMO_c5e4cdd1-1e78-4b12-a2c3-b891924987af_800x.webp', 1, 170, 170.00, '9'),
+(167, 91, 'IL Supremo!', 'ILSUPREMO_c5e4cdd1-1e78-4b12-a2c3-b891924987af_800x.webp', 1, 210, 210.00, '11');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `password_resets`
+--
+
+CREATE TABLE `password_resets` (
+  `id` int(11) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `reset_token` varchar(255) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -202,9 +286,13 @@ CREATE TABLE `reservations` (
 
 INSERT INTO `reservations` (`email`, `name`, `contact`, `noOfGuests`, `reservedTime`, `reservedDate`, `reservedAt`, `status`, `reservation_id`) VALUES
 ('asna@gmail.com', 'Asna Assalam', '0000000000', 6, '12:00:00', '2024-07-31', '2024-07-29 15:35:05', 'Completed', 1),
-('zidnan@gmail.com', 'Zidnan', '1111111111', 5, '10:00:07', '2024-08-11', '2024-08-10 18:14:55', 'Pending', 2),
-('preethi@gmail.com', 'Preethi Suresh', '5555555', 2, '06:30:59', '2024-08-10', '2024-08-03 18:15:54', 'On Process', 3),
-('jhon@gmail.com', 'Jhon Paul', '334455', 9, '20:45:59', '2024-08-09', '2024-08-05 18:16:38', 'Cancelled', 4);
+('zidnan@gmail.com', 'Zidnan', '1111111111', 5, '10:00:07', '2024-08-11', '2024-08-10 18:14:55', '', 2),
+('preethi@gmail.com', 'Preethi Suresh', '5555555', 2, '06:30:59', '2024-08-10', '2024-08-03 18:15:54', '', 3),
+('jhon@gmail.com', 'Jhon Paul', '334455', 9, '20:45:59', '2024-08-09', '2024-08-05 18:16:38', 'Cancelled', 4),
+('hfhf@gmail.com', 'hfh', 'hgf', 4, '00:00:00', '2025-05-24', '2025-05-04 14:28:29', 'Pending', 18),
+('josh@gmail.com', 'Josh', '0984878782', 4, '00:00:08', '2025-05-05', '2025-05-05 00:20:28', 'Pending', 19),
+('josh@gmail.com', 'Joseph Cadenass', '0959997989', 4, '00:00:11', '2025-05-07', '2025-05-05 02:27:01', 'Pending', 20),
+('josh@gmail.com', 'Joseph Cadenass', '0959997989', 4, '00:00:10', '2025-05-07', '2025-05-05 02:41:15', 'Pending', 21);
 
 -- --------------------------------------------------------
 
@@ -218,6 +306,7 @@ CREATE TABLE `reviews` (
   `order_id` int(11) DEFAULT NULL,
   `rating` int(11) NOT NULL,
   `review_text` text DEFAULT NULL,
+  `video_path` varchar(255) DEFAULT NULL,
   `review_date` date DEFAULT current_timestamp(),
   `status` enum('approved','pending','rejected') DEFAULT 'pending',
   `response` text DEFAULT NULL
@@ -227,9 +316,9 @@ CREATE TABLE `reviews` (
 -- Dumping data for table `reviews`
 --
 
-INSERT INTO `reviews` (`review_id`, `email`, `order_id`, `rating`, `review_text`, `review_date`, `status`, `response`) VALUES
-(1, 'zidnan@gmail.com', 56, 5, 'The food was absolutely delicious! I\'ll definitely be ordering again!', '2024-08-10', 'approved', 'Thank you for your feedback.'),
-(2, 'jhon@gmail.com', 57, 3, '\"The burger was tasty, but it arrived a bit cold. The fries were also soggy. I hope this can be improved next time.\"', '2024-08-11', 'pending', NULL);
+INSERT INTO `reviews` (`review_id`, `email`, `order_id`, `rating`, `review_text`, `video_path`, `review_date`, `status`, `response`) VALUES
+(37, 'daniel@gmail.com', 90, 4, 'dsd', 'uploads/reviews/681a3b584bdfc_Screen Recording 2025-05-07 002843.mp4', '2025-05-07', 'approved', NULL),
+(38, 'marites@gmail.com', 91, 2, 'lami', 'uploads/reviews/681ad79b4d1c5_Screen Recording 2025-05-07 002750.mp4', '2025-05-07', 'approved', NULL);
 
 -- --------------------------------------------------------
 
@@ -257,7 +346,8 @@ CREATE TABLE `staff` (
 INSERT INTO `staff` (`id`, `firstName`, `lastName`, `email`, `contact`, `role`, `password`, `createdAt`, `updatedAt`, `profile_image`) VALUES
 (2, 'Akshaya', 'Rohit', 'ak@gmail.com', '8877669955', 'superadmin', 'AkRohit', '2024-08-02 19:45:36', '2024-08-10 15:30:48', 'user-girl.png'),
 (3, 'Ravi', 'Kumar', 'ravi@gmail.com', '9876543210', 'delivery boy', 'ravi123', '2024-08-02 19:46:10', '2024-08-02 19:46:10', 'default.jpg'),
-(5, 'Demo', 'Admin', 'admin@gmail.com', '0000000000', 'admin', 'admin2024', '2024-08-04 06:51:20', '2024-08-04 06:51:38', 'default.jpg');
+(5, 'Demo', 'Admin', 'admin@gmail.com', '0000000000', 'admin', 'admin2024', '2024-08-04 06:51:20', '2025-05-05 00:34:03', 'AI Generated Model.jpg'),
+(7, 'Pyangg', 'Generalao', 'pyang@gmail.com', '0997799', 'delivery boy', '123123123', '2025-05-03 08:29:34', '2025-05-03 08:33:57', 'default.jpg');
 
 -- --------------------------------------------------------
 
@@ -272,18 +362,30 @@ CREATE TABLE `users` (
   `contact` varchar(10) NOT NULL,
   `password` varchar(20) NOT NULL,
   `dateCreated` timestamp NOT NULL DEFAULT current_timestamp(),
-  `profile_image` varchar(255) NOT NULL DEFAULT 'default.jpg'
+  `profile_image` varchar(255) NOT NULL DEFAULT 'default.jpg',
+  `reset_token` varchar(255) DEFAULT NULL,
+  `token_expiry` datetime DEFAULT NULL,
+  `otp` varchar(6) DEFAULT NULL,
+  `otp_expiry` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`email`, `firstName`, `lastName`, `contact`, `password`, `dateCreated`, `profile_image`) VALUES
-('asna@gmail.com', 'Asna', 'Assalam', '3333333333', 'AsnaA', '2024-07-26 12:50:46', 'user-girl.png'),
-('jhon@gmail.com', 'Jhon', 'Paul', '4444444444', 'JhonP', '2024-08-10 15:37:56', 'default.jpg'),
-('preethi@gmail.com', 'Preethi', 'Suresh', '2222222222', 'Preethi123', '2024-08-10 15:36:50', 'default.jpg'),
-('zidnan@gmail.com', 'Zidnan', 'Ahamad', '1111111111', 'Zidnan123', '2024-07-30 12:45:21', 'user-boy.jpg');
+INSERT INTO `users` (`email`, `firstName`, `lastName`, `contact`, `password`, `dateCreated`, `profile_image`, `reset_token`, `token_expiry`, `otp`, `otp_expiry`) VALUES
+('1233444@gmail.com', 'congtvbvbvbvbvbb', 'cvcvcvbvbvhhhhhh', '988888888', 'Pyang#1234', '2025-05-08 05:26:59', 'default.jpg', NULL, NULL, NULL, NULL),
+('almafepepana@gmail.com', 'mace', 'lassy', '978787888', 'Mace#1234', '2025-05-07 15:32:45', 'AI Generated Model.jpg', NULL, NULL, NULL, NULL),
+('almafepepani.g@gmail.com', 'alma', 'peps', '978787888', 'Pyang#1234', '2025-05-08 02:10:45', 'default.jpg', NULL, NULL, NULL, NULL),
+('almafepepania@gmail.com', '  434', '4343', '998788877', '123123', '2025-05-05 03:38:55', 'default.jpg', NULL, NULL, NULL, NULL),
+('asna@gmail.com', 'Asna', 'Assalam', '3333333333', 'AsnaA', '2024-07-26 12:50:46', 'user-girl.png', NULL, NULL, NULL, NULL),
+('daniel@gmail.com', 'daniell', 'padilla', '0978787333', 'daniel', '2025-05-05 00:30:38', '681757559a854.jpg', NULL, NULL, NULL, NULL),
+('fdfdf@gmail.com', 'fdfs', 'fsdfds', '654878977', 'Jassy@1234', '2025-05-07 14:55:09', 'default.jpg', NULL, NULL, NULL, NULL),
+('jhon@gmail.com', 'Jhon', 'Paul', '4444444444', 'JhonP', '2024-08-10 15:37:56', 'default.jpg', NULL, NULL, NULL, NULL),
+('marites@gmail.com', 'marites', 'Quivedo', '989787866', 'marites', '2025-05-07 03:43:59', 'default.jpg', NULL, NULL, NULL, NULL),
+('pepania@gmail.com', 'rewew', 'fsf', '434343333', 'pyangpepania', '2025-05-05 03:40:32', 'default.jpg', NULL, NULL, NULL, NULL),
+('preethi@gmail.com', 'Preethi', 'Suresh', '2222222222', 'Preethi123', '2024-08-10 15:36:50', 'default.jpg', NULL, NULL, NULL, NULL),
+('zidnan@gmail.com', 'Zidnan', 'Ahamad', '1111111111', 'Zidnan123', '2024-07-30 12:45:21', 'user-boy.jpg', NULL, NULL, NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -296,16 +398,30 @@ ALTER TABLE `cart`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `gcash_images`
+--
+ALTER TABLE `gcash_images`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `menucategory`
 --
 ALTER TABLE `menucategory`
-  ADD PRIMARY KEY (`catId`);
+  ADD PRIMARY KEY (`catId`),
+  ADD UNIQUE KEY `catName` (`catName`);
 
 --
 -- Indexes for table `menuitem`
 --
 ALTER TABLE `menuitem`
   ADD PRIMARY KEY (`itemId`);
+
+--
+-- Indexes for table `menuitem_sizes`
+--
+ALTER TABLE `menuitem_sizes`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `itemId` (`itemId`);
 
 --
 -- Indexes for table `orders`
@@ -321,6 +437,12 @@ ALTER TABLE `order_items`
   ADD PRIMARY KEY (`id`),
   ADD KEY `order_id` (`order_id`),
   ADD KEY `itemId` (`itemName`) USING BTREE;
+
+--
+-- Indexes for table `password_resets`
+--
+ALTER TABLE `password_resets`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `reservations`
@@ -357,53 +479,77 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `cart`
 --
 ALTER TABLE `cart`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=122;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=184;
+
+--
+-- AUTO_INCREMENT for table `gcash_images`
+--
+ALTER TABLE `gcash_images`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
 
 --
 -- AUTO_INCREMENT for table `menucategory`
 --
 ALTER TABLE `menucategory`
-  MODIFY `catId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `catId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `menuitem`
 --
 ALTER TABLE `menuitem`
-  MODIFY `itemId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+  MODIFY `itemId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
+
+--
+-- AUTO_INCREMENT for table `menuitem_sizes`
+--
+ALTER TABLE `menuitem_sizes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
 
 --
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `order_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
+  MODIFY `order_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=92;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=134;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=168;
+
+--
+-- AUTO_INCREMENT for table `password_resets`
+--
+ALTER TABLE `password_resets`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `reservations`
 --
 ALTER TABLE `reservations`
-  MODIFY `reservation_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `reservation_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT for table `reviews`
 --
 ALTER TABLE `reviews`
-  MODIFY `review_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
+  MODIFY `review_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
 
 --
 -- AUTO_INCREMENT for table `staff`
 --
 ALTER TABLE `staff`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `menuitem_sizes`
+--
+ALTER TABLE `menuitem_sizes`
+  ADD CONSTRAINT `menuitem_sizes_ibfk_1` FOREIGN KEY (`itemId`) REFERENCES `menuitem` (`itemId`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `orders`

@@ -316,14 +316,14 @@ $orderItemsResult = $stmt->get_result();
                         <span>
                             <ul>
                                 <?php while ($item = $orderItemsResult->fetch_assoc()) : ?>
-                                    <li><?= htmlspecialchars($item['itemName']) ?> - <?= htmlspecialchars($item['quantity']) ?></li>
+                                    <li><?= htmlspecialchars($item['itemName']) ?> <?= htmlspecialchars($item['size']) ?> - <?= htmlspecialchars($item['quantity']) ?></li>
                                 <?php endwhile; ?>
                             </ul>
                         </span>
                     </li>
                     <li>
                         <span><strong>Total:</strong></span>
-                        <span>Rs <?= number_format($order['grand_total']) ?></span>
+                        <span>₱ <?= number_format($order['grand_total']) ?></span>
                     </li>
                     <li>
                         <span><strong>Address:</strong></span>

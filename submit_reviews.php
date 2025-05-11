@@ -1,12 +1,13 @@
 <?php
 session_start();
-include 'db_connection.php'; // Ensure you have a db_connection.php file to connect to your database
+include 'db_connection.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $orderId = $_POST['orderId'];
     $reviewText = $_POST['reviewText'];
     $rating = $_POST['rating'];
-    $email = $_SESSION['email']; // Ensure this email is valid and exists in the users table
+    $email = $_SESSION['email'];
+    $videoPath = null;
 
     // Validate email
     $emailQuery = $conn->prepare("SELECT email FROM users WHERE email = ?");
@@ -18,9 +19,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $emailQuery->close();
 
+    // Handle video upload
+    if (isset($_FILES['reviewVideo']) && $_FILES['reviewVideo']['error'] === UPLOAD_ERR_OK) {
+        $videoTmp = $_FILES['reviewVideo']['tmp_name'];
+        $videoName = basename($_FILES['reviewVideo']['name']);
+        $uploadDir = 'uploads/reviews/';
+        if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+        $videoPath = $uploadDir . uniqid() . '_' . $videoName;
+
+        if (!move_uploaded_file($videoTmp, $videoPath)) {
+            die('Error uploading video file.');
+        }
+    }
+
     // Insert or update review
-    $stmt = $conn->prepare("INSERT INTO reviews (order_id, email, rating, review_text, response) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE review_text = VALUES(review_text)");
-    $stmt->bind_param('isiss', $orderId, $email, $rating, $reviewText, $reviewResponse);
+    $stmt = $conn->prepare("INSERT INTO reviews (order_id, email, rating, review_text, video_path) VALUES (?, ?, ?, ?, ?) 
+        ON DUPLICATE KEY UPDATE review_text = VALUES(review_text), video_path = VALUES(video_path)");
+    $stmt->bind_param('isiss', $orderId, $email, $rating, $reviewText, $videoPath);
 
     if ($stmt->execute()) {
         echo '<script>alert("Review submitted successfully!");</script>';

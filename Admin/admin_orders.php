@@ -10,7 +10,7 @@ include 'db_connection.php'; // Make sure to include your database connection
 $statusFilter = isset($_GET['statusFilter']) ? $_GET['statusFilter'] : '';
 $searchOrderId = isset($_GET['searchOrderId']) ? $_GET['searchOrderId'] : '';
 
-$query = "SELECT order_id, order_date, firstName, lastName, phone, grand_total, order_status, pmode, cancel_reason FROM orders";
+$query = "SELECT order_id, order_date, firstName, lastName, phone, grand_total, order_status, pmode, cancel_reason, image FROM orders";
 $conditions = [];
 
 if (!empty($statusFilter)) {
@@ -52,6 +52,37 @@ include 'sidebar.php';
   .content{
     margin-bottom: 40px;
   }
+  .pagination-container {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.pagination-container a {
+  display: inline-block;
+  margin: 0 5px;
+  padding: 8px 14px;
+  background-color: #f4f4f4;
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.pagination-container a:hover {
+  background-color: #ffc9b3;
+  color: white;
+  border-color: #ffc9b3;
+}
+
+.pagination-container a.active {
+  background-color: #fb4a36;
+  color: white;
+  font-weight: bold;
+  border-color: #fb4a36;
+}
+
+  
 </style>
 </head>
 
@@ -111,64 +142,125 @@ include 'sidebar.php';
             </div>
         </div>
         <?php
-        // Display orders in a table
-        echo "<table>
-                <tr>
-                    <th>Order ID</th>
-                    <th>Customer Name</th>
-                    <th>Contact</th>
-                    <th>Total</th>
-                    <th>Order Status</th>
-                    <th>Payment Mode</th>
-                    <th>Cancel Reason</th>
-                    <th>Action</th>
-                </tr>";
-        if ($result && $result->num_rows > 0) {
-            while ($row = $result->fetch_assoc()) {
-                $statusClass = '';
-                switch ($row['order_status']) {
-                    case 'Pending':
-                        $statusClass = 'status-pending';
-                        break;
-                    case 'Processing':
-                        $statusClass = 'status-processing';
-                        break;
-                    case 'Completed':
-                        $statusClass = 'status-completed';
-                        break;
-                    case 'Cancelled':
-                        $statusClass = 'status-cancelled';
-                        break;
-                    case 'On the way':
-                        $statusClass = 'status-ontheway';
-                        break;
-                }
-                echo "<tr>
-                    <td>" . $row['order_id'] . "</td>
-                    <td>" . $row['firstName'] . " " . $row['lastName'] . "</td>
-                    <td>" . $row['phone'] . "</td>
-                    <td>" . 'Rs ' . $row['grand_total'] . "</td>
-                    <td><span class='status $statusClass'>" . $row['order_status'] . "</span></td>
-                    <td>" . $row['pmode'] . "</td>
-                    <td>" . ($row['order_status'] == 'Cancelled' ? $row['cancel_reason'] : '-') . "</td>
-                    <td><button id='viewbtn' onclick=\"viewDetails(" . $row['order_id'] . ")\">View Details</button></td>
-                </tr>";
-            }
-        } else {
-            echo "<tr><td colspan='8' style='text-align: center;'>No Orders Found</td></tr>";
+// Connect to database
+$conn = new mysqli("localhost", "root", "", "restaurant"); // Update this
+
+// Set how many results per page
+$resultsPerPage = 6;
+
+// Get current page number from URL, default to 1
+$page = isset($_GET['page']) && is_numeric($_GET['page']) ? intval($_GET['page']) : 1;
+
+// Calculate offset
+$offset = ($page - 1) * $resultsPerPage;
+
+// Count total orders for pagination
+$totalResult = $conn->query("SELECT COUNT(*) AS total FROM orders");
+$totalRows = $totalResult->fetch_assoc()['total'];
+$totalPages = ceil($totalRows / $resultsPerPage);
+
+// Fetch limited records
+$sql = "SELECT * FROM orders ORDER BY order_id DESC LIMIT $resultsPerPage OFFSET $offset";
+$result = $conn->query($sql);
+
+// Display orders
+echo "<table>
+    <tr>
+        <th>Order ID</th>
+        <th>Customer Name</th>
+        <th>Contact</th>
+        <th>Total</th>
+        <th>Order Status</th>
+        <th>Payment Mode</th>
+        <th>Cancel Reason</th>
+        <th>Action</th>
+    </tr>";
+
+if ($result && $result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {
+        $statusClass = '';
+        switch ($row['order_status']) {
+            case 'Pending': $statusClass = 'status-pending'; break;
+            case 'Processing': $statusClass = 'status-processing'; break;
+            case 'Completed': $statusClass = 'status-completed'; break;
+            case 'Cancelled': $statusClass = 'status-cancelled'; break;
+            case 'On the way': $statusClass = 'status-ontheway'; break;
         }
 
-        echo "</table>";
+        echo "<tr>
+            <td>" . $row['order_id'] . "</td>
+            <td>" . $row['firstName'] . " " . $row['lastName'] . "</td>
+            <td>" . $row['phone'] . "</td>
+            <td>₱ " . $row['grand_total'] . "</td>
+            <td><span class='status $statusClass'>" . $row['order_status'] . "</span></td>
+            <td>" . htmlspecialchars($row['pmode']) . 
+    ($row['pmode'] === 'Gcash' && !empty($row['image']) ? 
+    "<br><img src='../uploads/" . htmlspecialchars($row['image']) . "' 
+        alt='Payment Image' 
+        style='width:40px; height:auto; border-radius:3px; cursor:pointer;' 
+        onclick=\"openModal('../uploads/" . htmlspecialchars($row['image']) . "')\">" 
+    : "") . 
+"</td>
 
-        $conn->close();
-        ?>
+            <td>" . ($row['order_status'] == 'Cancelled' ? $row['cancel_reason'] : '-') . "</td>
+            <td><button id='viewbtn' onclick=\"viewDetails(" . $row['order_id'] . ")\">View Details</button></td>
+        </tr>";
+    }
+} else {
+    echo "<tr><td colspan='8' style='text-align: center;'>No Orders Found</td></tr>";
+}
+
+echo "</table>";
+
+// Display pagination with Previous and Next
+echo "<div class='pagination-container'>";
+
+// Previous button
+if ($page > 1) {
+    $prevPage = $page - 1;
+    echo "<a href='?page=$prevPage'>&laquo; Prev</a>";
+}
+
+// Numbered pages
+for ($i = 1; $i <= $totalPages; $i++) {
+    $activeClass = ($i == $page) ? "active" : "";
+    echo "<a class='$activeClass' href='?page=$i'>$i</a>";
+}
+
+// Next button
+if ($page < $totalPages) {
+    $nextPage = $page + 1;
+    echo "<a href='?page=$nextPage'>Next &raquo;</a>";
+}
+
+echo "</div>";
+
+
+
+$conn->close();
+?>
+
     </div>
+    <!-- Image Modal -->
+<div id="imageModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.8); justify-content:center; align-items:center; z-index:9999;">
+    <span onclick="closeModal()" style="position:absolute; top:20px; right:30px; color:white; font-size:30px; cursor:pointer;">&times;</span>
+    <img id="modalImage" src="" style="max-width:90%; max-height:90%;">
+</div>
+
 
     <?php
     include_once ('footer.html');
     ?>
     <script src="sidebar.js"></script>
     <script>
+        function openModal(imageSrc) {
+    document.getElementById('modalImage').src = imageSrc;
+    document.getElementById('imageModal').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('imageModal').style.display = 'none';
+}
                 function viewDetails(orderId) {
             window.location.href = 'view_order.php?orderId=' + orderId;
         }

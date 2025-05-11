@@ -164,9 +164,10 @@ include 'sidebar.php';
               <select class="form-select" id="orderStatus" name="order_status">
                 <option value="Pending" <?php if ($order['order_status'] == 'Pending') echo 'selected'; ?>>Pending</option>
                 <option value="Processing" <?php if ($order['order_status'] == 'Processing') echo 'selected'; ?>>Processing</option>
+                <option value="On the way" <?php if ($order['order_status'] == 'On the way') echo 'selected'; ?>>On the way</option>
                 <option value="Completed" <?php if ($order['order_status'] == 'Completed') echo 'selected'; ?>>Completed</option>
                 <option value="Cancelled" <?php if ($order['order_status'] == 'Cancelled') echo 'selected'; ?>>Cancelled</option>
-                <option value="On the way" <?php if ($order['order_status'] == 'On the way') echo 'selected'; ?>>On the way</option>
+                
               </select>
             </div>
             <div class="mb-3" id="cancelReasonContainer" style="display: none;">

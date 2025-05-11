@@ -23,12 +23,45 @@ include 'sidebar.php';
   <!--poppins-->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
   <link rel="stylesheet" href="admin_reservation.css">
   <link rel="stylesheet" href="sidebar.css">
   <link rel="stylesheet" href="admin_review.css">
 </head>
+<style>
+  .pagination-container {
+    text-align: center;
+    margin: 20px 0;
+  }
+
+  .pagination-container a {
+    display: inline-block;
+    margin: 0 5px;
+    padding: 8px 14px;
+    background-color: #f4f4f4;
+    color: #333;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+  }
+
+  .pagination-container a:hover {
+    background-color: #ffc9b3;
+    color: white;
+    border-color: #ffc9b3;
+  }
+
+  .pagination-container a.active {
+    background-color: #fb4a36;
+    color: white;
+    font-weight: bold;
+    border-color: #fb4a36;
+  }
+</style>
 
 <body>
   <div class="sidebar">
@@ -39,7 +72,8 @@ include 'sidebar.php';
       <img src="../uploads/<?php echo htmlspecialchars($admin_info['profile_image']); ?>" alt="Profile Picture">
       <div class="info">
         <h3>Welcome Back!</h3>
-        <p><?php echo htmlspecialchars($admin_info['firstName']) . ' ' . htmlspecialchars($admin_info['lastName']); ?></p>
+        <p><?php echo htmlspecialchars($admin_info['firstName']) . ' ' . htmlspecialchars($admin_info['lastName']); ?>
+        </p>
       </div>
     </div>
 
@@ -74,6 +108,34 @@ include 'sidebar.php';
       </select>
     </div>
 
+    <?php
+    // Include the database connection
+    include 'db_connection.php';
+
+    // Define items per page
+    $itemsPerPage = 5;
+
+    // Get the current page from the URL, default to 1 if not set
+    $page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
+
+    // Calculate the offset for the query
+    $offset = ($page - 1) * $itemsPerPage;
+
+    // Modify the SQL query to include pagination (no search)
+    $sql = "SELECT * FROM reviews LIMIT $itemsPerPage OFFSET $offset"; // Add LIMIT and OFFSET for pagination
+    
+    // Get total reviews count for pagination
+    $totalResult = mysqli_query($conn, "SELECT COUNT(*) AS count FROM reviews");
+    $totalRows = mysqli_fetch_assoc($totalResult)['count'];
+    $totalPages = ceil($totalRows / $itemsPerPage);
+
+    // Execute the query
+    $result = mysqli_query($conn, $sql);
+    ?>
+   
+
+
+
     <div class="table">
       <table id="reviewTable">
         <thead>
@@ -82,58 +144,99 @@ include 'sidebar.php';
             <th>Email</th>
             <th>Review Text</th>
             <th>Rating</th>
+            <th>Video</th>
             <th>Status</th>
             <th>Response</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          <?php
-          // Include the database connection
-          include 'db_connection.php';
+        <?php
+if (mysqli_num_rows($result) > 0) {
+  while ($row = mysqli_fetch_assoc($result)) {
+    $ratingStars = str_repeat('&#9733;', $row['rating']) . str_repeat('&#9734;', 5 - $row['rating']);
+    $videoPath = !empty($row['video_path']) ? $row['video_path'] : null;
 
-          // Query to fetch all reviews
-          $sql = "SELECT * FROM reviews";
-          $result = mysqli_query($conn, $sql);
 
-          if (mysqli_num_rows($result) > 0) {
-            // If there are rows, display them
-            while ($row = mysqli_fetch_assoc($result)) {
-              // Convert rating to stars
-              $ratingStars = str_repeat('&#9733;', $row['rating']) . str_repeat('&#9734;', 5 - $row['rating']);
+    echo "<tr>
+      <td>{$row['order_id']}</td>
+      <td>{$row['email']}</td>
+      <td>{$row['review_text']}</td>
+      <td class='rating-stars'>{$ratingStars}</td>
+      <td>";
 
-              echo "<tr>
-                        <td>{$row['order_id']}</td>
-                        <td>{$row['email']}</td>
-                        <td>{$row['review_text']}</td>
-                        <td class='rating-stars'>{$ratingStars}</td>
-                        <td>
-                         <select id='status-{$row['order_id']}' onchange='updateStatus({$row['order_id']}, this.value)' class='status-select'>
-                         <option value='pending' " . ($row['status'] == 'pending' ? 'selected' : '') . ">Pending</option>
-                         <option value='approved' " . ($row['status'] == 'approved' ? 'selected' : '') . ">Approved</option>
-                         <option value='rejected' " . ($row['status'] == 'rejected' ? 'selected' : '') . ">Rejected</option>
-                         </select>
-                        </td>
+      if ($videoPath) {
+        echo "<video width='300' height='200' controls style='border-radius: 8px;'>
+                <source src='{$videoPath}' type='video/mp4'>
+                Your browser does not support the video tag.
+              </video>";
+      } else {
+        echo "No Video";
+      }
+      echo "</td>
+      
+      <td>
+        <select id='status-{$row['order_id']}' onchange='updateStatus({$row['order_id']}, this.value)' class='status-select'>
+          <option value='pending' " . ($row['status'] == 'pending' ? 'selected' : '') . ">Pending</option>
+          <option value='approved' " . ($row['status'] == 'approved' ? 'selected' : '') . ">Approved</option>
+          <option value='rejected' " . ($row['status'] == 'rejected' ? 'selected' : '') . ">Rejected</option>
+        </select>
+      </td>
+      <td>{$row['response']}</td>
+      <td>
+        <button onclick='openEditReviewModal(this)' 
+          data-id='{$row['order_id']}'
+          data-email='{$row['email']}'
+          data-review_text='{$row['review_text']}'
+          data-rating='{$row['rating']}'
+          data-response='{$row['response']}'>
+          <i class='fas fa-edit'></i>
+        </button>
+        <button onclick=\"deleteReview('{$row['order_id']}', '{$row['email']}')\">
+          <i class='fas fa-trash'></i>
+        </button>
+      </td>
+    </tr>";
+  }
+} else {
+  echo "<tr><td colspan='8' style='text-align: center;'>No Reviews</td></tr>";
+}
+mysqli_close($conn);
+?>
 
-                        <td>{$row['response']}</td>
-                        <td>
-                            <button id='editbtn' onclick='openEditReviewModal(this)' data-id='{$row['order_id']}' data-email='{$row['email']}' data-review_text='{$row['review_text']}' data-rating='{$row['rating']}' data-response='{$row['response']}'><i class='fas fa-edit'></i></button>
-                            <button id='deletebtn' onclick=\"deleteReview('{$row['order_id']}', '{$row['email']}')\"><i class='fas fa-trash'></i></button>
-                        </td>
-                      </tr>";
-            }
-          } else {
-            // If no rows, display the "No Reviews" message
-            echo "<tr><td colspan='6' style='text-align: center;'>No Reviews</td></tr>";
-          }
 
-          // Close the database connection
-          mysqli_close($conn);
-          ?>
         </tbody>
       </table>
     </div>
+
+    <!-- Pagination -->
+    <div class="pagination-container">
+      <?php
+      // Previous button
+      if ($page > 1) {
+        $prevPage = $page - 1;
+        echo "<a href='?page=$prevPage'>&laquo; Prev</a>";
+      }
+
+      // Numbered pages
+      for ($i = 1; $i <= $totalPages; $i++) {
+        $activeClass = ($i == $page) ? "active" : "";
+        echo "<a class='$activeClass' href='?page=$i'>$i</a>";
+      }
+
+      // Next button
+      if ($page < $totalPages) {
+        $nextPage = $page + 1;
+        echo "<a href='?page=$nextPage'>Next &raquo;</a>";
+      }
+      ?>
+    </div>
+
   </div>
+
+
+
+
 
   <!-- Modal for editing review -->
   <div id="editReviewModal" class="modal">
@@ -183,27 +286,27 @@ include 'sidebar.php';
   </div>
 
   <?php
-    include_once ('footer.html');
-    ?>
+  include_once('footer.html');
+  ?>
   <script>
-   function updateStatus(order_id, status) {
-  var xhr = new XMLHttpRequest();
-  xhr.open("POST", "update_review_status.php", true);
-  xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4 && xhr.status === 200) {
-      // Check if the response indicates success
-      if (xhr.responseText.trim() === "Status updated successfully") {
-        // Optionally, display a success message
-        alert("Status updated successfully");
-      } else {
-        // Display an error message
-        alert("Error updating status: " + xhr.responseText);
-      }
+    function updateStatus(order_id, status) {
+      var xhr = new XMLHttpRequest();
+      xhr.open("POST", "update_review_status.php", true);
+      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+          // Check if the response indicates success
+          if (xhr.responseText.trim() === "Status updated successfully") {
+            // Optionally, display a success message
+            alert("Status updated successfully");
+          } else {
+            // Display an error message
+            alert("Error updating status: " + xhr.responseText);
+          }
+        }
+      };
+      xhr.send("order_id=" + encodeURIComponent(order_id) + "&status=" + encodeURIComponent(status));
     }
-  };
-  xhr.send("order_id=" + encodeURIComponent(order_id) + "&status=" + encodeURIComponent(status));
-}
 
 
 
@@ -212,15 +315,15 @@ include 'sidebar.php';
       if (confirm('Are you sure you want to delete this review?')) {
         // Send delete request to server
         fetch('delete_review.php', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              orderId: orderId,
-              email: email
-            })
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            orderId: orderId,
+            email: email
           })
+        })
           .then(response => response.json())
           .then(data => {
             if (data.success) {
@@ -257,28 +360,28 @@ include 'sidebar.php';
     }
 
     function filterByStatus() {
-    // Get the selected status from the dropdown
-    const status = document.getElementById('statusFilter').value;
+      // Get the selected status from the dropdown
+      const status = document.getElementById('statusFilter').value;
 
-    // Create an XMLHttpRequest object
-    var xhr = new XMLHttpRequest();
+      // Create an XMLHttpRequest object
+      var xhr = new XMLHttpRequest();
 
-    // Set up the request
-    xhr.open('POST', 'fetch_review_status.php', true);
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+      // Set up the request
+      xhr.open('POST', 'fetch_review_status.php', true);
+      xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 
-    // Define what happens on successful data submission
-    xhr.onload = function() {
+      // Define what happens on successful data submission
+      xhr.onload = function () {
         if (xhr.status === 200) {
-            // Update the table with the filtered results
-            document.querySelector('#reviewTable tbody').innerHTML = xhr.responseText;
+          // Update the table with the filtered results
+          document.querySelector('#reviewTable tbody').innerHTML = xhr.responseText;
         }
-    };
+      };
 
-    // Send the request with the selected status
-    xhr.send('status=' + encodeURIComponent(status));
-}
-
+      // Send the request with the selected status
+      xhr.send('status=' + encodeURIComponent(status));
+    }
+   
   </script>
 </body>
 

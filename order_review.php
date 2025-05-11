@@ -12,7 +12,7 @@ if (!isset($_SESSION['userloggedin']) || $_SESSION['userloggedin'] !== true) {
 $email = $_SESSION['email'];
 
 // Fetch user data
-$stmt = $conn->prepare('SELECT * FROM users WHERE email=?');
+$stmt = $conn->prepare('SELECT firstName, lastName, contact, email FROM users WHERE email=?');
 $stmt->bind_param('s', $email);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -39,9 +39,25 @@ foreach ($itemDetails as $item) {
   $itemQuantity = $item['quantity'];
   $subtotal += $itemPrice * $itemQuantity;
 }
-$deliveryFee = ($_POST['payment_mode'] === 'Takeaway') ? 0 : 130;
+$deliveryFee = ($_POST['payment_mode'] === 'Pick_up') ? 0 : 50;
 $total = $subtotal + $deliveryFee;
 
+$gcashImagePath = '';
+$gcashImageId = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['payment_mode'] === 'Gcash') {
+ 
+
+  // Fetch the latest image by ID
+  $stmt = $conn->prepare("SELECT id, image_path FROM gcash_images ORDER BY id DESC LIMIT 1");
+  $stmt->execute();
+  $result = $stmt->get_result();
+
+  if ($row = $result->fetch_assoc()) {
+    $gcashImageId = $row['id'];
+    $gcashImagePath = $row['image_path'];
+  }
+}
 
 ?>
 
@@ -70,27 +86,35 @@ $total = $subtotal + $deliveryFee;
 
       <h4>Order Details</h4>
       <hr>
-      <form action="process_order.php" method="post">
+      <form action="process_order.php" method="post" enctype="multipart/form-data">
         <input type="hidden" name="total" value="<?= $total ?>">
         <input type="hidden" name="subtotal" value="<?= $subtotal ?>">
         <input type="hidden" name="order_id" value="<?= $orderId ?>">
         <input type="hidden" name="selected_items" value='<?= json_encode($selectedItems) ?>'>
         <input type="hidden" name="payment_mode" value="<?= htmlspecialchars($_POST['payment_mode']) ?>">
         <div class="form-group row">
-          <div class="col">
-            <label for="firstName">First Name:</label>
-            <input type="text" class="form-control" id="firstName" name="firstName" required>
-          </div>
-          <div class="col">
-            <label for="lastName">Last Name:</label>
-            <input type="text" class="form-control" id="lastName" name="lastName" required>
-          </div>
-        </div>
+        <div class="col">
+    <label for="firstName">First Name:</label>
+    <input type="text" class="form-control" id="firstName" name="firstName" value="<?= htmlspecialchars($user['firstName'] ?? '') ?>" required
+           oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')">
+</div>
+<div class="col">
+    <label for="lastName">Last Name:</label>
+    <input type="text" class="form-control" id="lastName" name="lastName" value="<?= htmlspecialchars($user['lastName'] ?? '') ?>" required
+           oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')">
+</div>
+</div>
+  
         <div class="form-group row">
-          <div class="col">
-            <label for="contact">Contact:</label>
-            <input type="text" class="form-control" id="contact" name="contact" required>
-          </div>
+        <div class="col">
+  <label for="contact">Contact:</label>
+  <div class="input-group">
+    <span class="input-group-text">+63</span>
+    <input type="text" class="form-control" id="contact" name="contact" maxlength="9" pattern="\d{9}" required  value="<?= htmlspecialchars($user['contact'] ?? '') ?>"
+           oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0,9);">
+  </div>
+</div>
+
           <div class="col">
             <label for="email">Email:</label>
             <input type="email" class="form-control" id="email" name="email" value="<?= htmlspecialchars($email) ?>" readonly>
@@ -101,9 +125,65 @@ $total = $subtotal + $deliveryFee;
           <textarea class="form-control" id="order_note" name="order_note" rows="3"></textarea>
         </div>
         <div class="form-group">
-          <label for="address">Address:</label>
-          <textarea class="form-control" id="address" name="address" rows="3" required></textarea>
-        </div>
+                        <b><label for="city">City</label></b>
+                        <input type="text" class="form-control" id="city" name="city" value="Mandaue City, 6014" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <b><label for="barangay">Barangay</label></b>
+                        <select class="form-control" id="barangay" name="barangay" required>
+                            <option value="" disabled selected>Select Barangay</option>
+                            <option value="Alang-Alang">Barangay Alang-Alang</option>
+                            <option value="Bakilid">Barangay Bakilid</option>
+                            <option value="Banilad">Barangay Banilad</option>
+                            <option value="Cambaro"> Barangay Cambaro</option>
+                            <option value="Basak">Barangay Basak</option>
+                            <option value="Cabancalan">Barangay Cabancalan</option>
+                            <option value="Canduman">Barangay Canduman</option>
+                            <option value="Casuntingan">Barangay Casuntingan</option>
+                            <option value="Cubacub">Barangay Cubacub</option>
+                            <option value="Casili">Barangay Casili</option>
+                            <option value="Maguikay">Barangay Maguikay</option>
+                            <option value="Centro">Barangay Centro</option>
+                            <option value="Guizo">Barangay Guizo</option>
+                            <option value="Ibabao-Estancia">Barangay Ibabao-Estancia</option>
+                            <option value="Labogon">Barangay Labogon</option>
+                            <option value="Looc">Barangay Looc</option>
+                            <option value="Mantuyong">Barangay Mantuyong</option>
+                            <option value="Jagobiao">Barangay Jagobiao</option>
+                            <option value="Opao">Barangay Opao</option>
+                            <option value="Paknaan">Barangay Paknaan</option>
+                            <option value="Tabok">Barangay Tabok</option>
+                            <option value="Pagsabungan">Barangay Pagsabungan</option>
+                            <option value="Subangdaku">Barangay Subangdaku</option>
+                            <option value="Tipolo">Barangay Tipolo</option>
+                            <option value="Umapad">Barangay Umapad</option>
+                            <option value="Tingub">Barangay Tingub</option>
+                            <option value="Tawason">Barangay Tawason</option>
+                            
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <b><label for="street">House No./Building/Street Name</label></b>
+                        <input class="form-control" id="street" name="street" placeholder="Enter street name" type="text">
+                    </div>
+
+<!-- Insert QR code display here -->
+<?php if (!empty($gcashImagePath)) : ?>
+  <div class="form-group mt-3">
+    <label><h6>GCash QR Code</h6></label><br>
+    <a href="Admin/<?= htmlspecialchars($gcashImagePath) ?>" download>
+      <img src="Admin/<?= htmlspecialchars($gcashImagePath) ?>" alt="GCash QR Code" style="max-width: 100px;">
+    </a>
+    <br>
+    <small ><a class="text-primary" href="Admin/<?= htmlspecialchars($gcashImagePath) ?>" download>Click the image or here to download</a></small>
+    <p>Customer upload gcash screenshot</p>
+    <input type="file" name="gcash_screenshot" accept="image/*" required> 
+  </div>
+<?php endif; ?>
+
+
 
     </div>
 
@@ -125,9 +205,9 @@ $total = $subtotal + $deliveryFee;
                 <div class="d-flex flex-row ">Quantity: <?= htmlspecialchars($item['quantity']) ?></div>
               </div>
               <div class="col d-flex flex-column justify-content-center">
-                <div class="d-flex flex-row justify-content-end align-items-center mt-2"> Rs <?= htmlspecialchars($item['price'], 0) ?> x <?= htmlspecialchars($item['quantity']) ?></div>
+                <div class="d-flex flex-row justify-content-end align-items-center mt-2"><?= htmlspecialchars($item['size']) ?> ₱ <?= htmlspecialchars($item['price'], 0) ?> x <?= htmlspecialchars($item['quantity']) ?></div>
                 <div class="d-flex flex-row justify-content-end align-items-start mb-2">
-                  <span class="badge rounded-pill text-light p-2 mt-2 item-total-price" style="background-color: #fb4a36;">Rs <?= $item['total_price'] ?></span>
+                  <span class="badge rounded-pill text-light p-2 mt-2 item-total-price" style="background-color: #fb4a36;">₱ <?= $item['total_price'] ?></span>
                 </div>
               </div>
             </div>
@@ -139,7 +219,7 @@ $total = $subtotal + $deliveryFee;
       <div class="summary-details">
         <div class="fee-details">
           <div><strong>Subtotal:</strong></div>
-          <div>Rs <?= number_format($subtotal) ?></div>
+          <div>₱ <?= number_format($subtotal) ?></div>
         </div>
         <div class="fee-details">
           <div><strong>Payment Method:</strong></div>
@@ -147,28 +227,14 @@ $total = $subtotal + $deliveryFee;
         </div>
         <div class="fee-details">
           <div><strong>Delivery Fee:</strong></div>
-          <div>Rs <?= number_format($deliveryFee) ?></div>
+          <div>₱ <?= number_format($deliveryFee) ?></div>
         </div>
         <div class="fee-details">
           <div><strong>Total:</strong></div>
-          <div>Rs <?= number_format($total) ?></div>
+          <div>₱ <?= number_format($total) ?></div>
         </div>
       </div>
-      <hr>
-      <?php
-      if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-        $payment_mode = $_POST['payment_mode'] ?? '';
-
-        if ($payment_mode == 'Card') {
-          echo '<button type="submit" class="Button">
-            Pay
-           <svg viewBox="0 0 576 512" class="svgIcon"><path d="M512 80c8.8 0 16 7.2 16 16v32H48V96c0-8.8 7.2-16 16-16H512zm16 144V416c0 8.8-7.2 16-16 16H64c-8.8 0-16-7.2-16-16V224H528zM64 32C28.7 32 0 60.7 0 96V416c0 35.3 28.7 64 64 64H512c35.3 0 64-28.7 64-64V96c0-35.3-28.7-64-64-64H64zm56 304c-13.3 0-24 10.7-24 24s10.7 24 24 24h48c13.3 0 24-10.7 24-24s-10.7-24-24-24H120zm128 0c-13.3 0-24 10.7-24 24s10.7 24 24 24H360c13.3 0 24-10.7 24-24s-10.7-24-24-24H248z"></path></svg>
-           </button>';
-        } else {
-          echo '<button type="submit" class="order-btn ">Place Order</button>';
-        }
-      }
-      ?>
+      <button type="submit" class="order-btn ">Place Order</button>
 
       </form>
     </div>

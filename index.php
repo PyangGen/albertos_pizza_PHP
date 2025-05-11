@@ -1,37 +1,60 @@
 <?php
 session_start();
-
-// Include database connection file
 include 'db_connection.php';
 
-// Check if database connection was successful
 if (!$conn) {
   die("Connection failed: " . mysqli_connect_error());
 }
 
-// Prepare query to fetch popular items
-$sql = "SELECT itemName, image, price FROM menuitem WHERE is_popular = 1";
+// JOIN menuitem and menuitem_sizes on itemId, only for popular items
+$sql = "SELECT 
+          mi.itemId, mi.itemName, mi.image, mi.description, 
+          ms.size, ms.price 
+        FROM 
+          menuitem mi
+        LEFT JOIN 
+          menuitem_sizes ms 
+        ON 
+          mi.itemId = ms.itemId
+        WHERE 
+          mi.is_popular = 1";
 
-// Check if query was successful
-if ($result = $conn->query($sql)) {
-  // Initialize array to store popular items
-  $popularItems = [];
+$result = $conn->query($sql);
 
-  // Fetch and store query results
+$popularItems = [];
+
+if ($result) {
   while ($row = $result->fetch_assoc()) {
-    $popularItems[] = $row;
+    $itemId = $row['itemId'];
+
+    // Initialize item entry if not already set
+    if (!isset($popularItems[$itemId])) {
+      $popularItems[$itemId] = [
+        'itemId' => $itemId,
+        'itemName' => $row['itemName'],
+        'image' => $row['image'],
+        'description' => $row['description'],
+        'sizes' => []
+      ];
+    }
+
+    // Add size and price if available
+    if (!empty($row['size']) && !empty($row['price'])) {
+      $popularItems[$itemId]['sizes'][] = [
+        'size' => $row['size'],
+        'price' => $row['price']
+      ];
+    }
   }
 
-  // Close query result
   $result->close();
 } else {
-  // Display error message if query fails
   echo "Error: " . $sql . "<br>" . $conn->error;
 }
 
-// Close database connection
 $conn->close();
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -78,18 +101,14 @@ $conn->close();
       <div class="container mt-3">
         <div class="row d-flex justify-content-start align-items-start main-container">
           <div class="col-md-5 col-sm-12 col-lg-5 reveal main-text mb-4 text-align-justify mt-5" data-aos="fade-up">
-            <h2>Welcome to <span style="color: #fb4a36;"> Grill 'N' Chill,</span></h2>
-            <h4 style="color: gray; font-weight: 450;">"Where Hot Flavors Meet Cool Comfort."</h4>
+            <h2>Welcome to <span style="color: #fb4a36;"> Alberto's Pizza,</span></h2>
+            <h4 style="color: gray; font-weight: 450;">"a taste you'll surelly miss..."</h4>
             <p style="font-size: 18px; text-align: justify;">
-              Dive into a culinary celebration where every dish bursts with
-              flavor. At Grill 'N' Chill, we believe in making every meal an
-              unforgettable experience. Whether you're here for a casual meal or a
-              special occasion, our vibrant dishes will leave a lasting
-              impression.
+            Alberto’s Pizza proudly started as a small-time pizza store in Cebu City near the Vicente Sotto Memorial Medical Center. To stand above the rest of the competition, the founders of Alberto’s Pizza wanted their products to be as affordable as they can be without hurting the quality and freshness of their pizzas. Alberto’s only focused on deliveries and take-outs due to the limited space available but after several months, word spread out very quickly and they were getting more and more orders from doctors, nurses, interns, and even patients! Different people from all walks of life began to discover this hidden gem of a pizza parlor and they all can’t get enough of Alberto’s Pizza’s delicious menu.
             </p>
             <div class="buttondiv">
               <div>
-                <a href="login.php">
+                <a href="menu.php">
                   <button class="button">
                     Start Order
                     <svg class="cartIcon" viewBox="0 0 576 512">
@@ -98,7 +117,7 @@ $conn->close();
                   </button>
                 </a>
               </div>
-              <div>
+              <!-- <div>
                 <a class="button1" href="menu.php">
                   <span class="button__icon-wrapper">
                     <svg width="10" class="button__icon-svg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 15">
@@ -110,7 +129,7 @@ $conn->close();
                   </span>
                   Explore Menu
                 </a>
-              </div>
+              </div> -->
             </div>
           </div>
           <div class="col-md-7 col-sm-12 col-lg-7 d-flex justify-content-center align-items-start slide-in-right main-image">
@@ -268,30 +287,54 @@ $conn->close();
               <button class="toast-btn toast-ok">Okay</button>
             </div>
             <?php
-            $chunkedItems = array_chunk($popularItems, 3); // Group items into chunks of 3
-            $isActive = true; // To set the first carousel item as active
+$chunkedItems = array_chunk($popularItems, 3); // Group items into chunks of 3
+$isActive = true; // First carousel item is active
 
-            foreach ($chunkedItems as $items) {
-              echo '<div class="carousel-item' . ($isActive ? ' active' : '') . '" >';
-              echo '<div class="d-flex justify-content-center">';
+foreach ($chunkedItems as $items) {
+    echo '<div class="carousel-item' . ($isActive ? ' active' : '') . '">';
+    echo '<div class="d-flex justify-content-center">';
 
-              foreach ($items as $item) {
-                echo '<div class="card" >';
-                echo '<img src="uploads/' . $item['image'] . '" class="card-img-top" alt="' . $item['itemName'] . '">';
-                echo '<div class="card-body">';
-                echo '<h5 class="card-title text-center">' . $item['itemName'] . '</h5>';
-                echo '<p class="card-text text-center">Rs ' . $item['price'] . '</p>';
-                echo '<a class="button-cart" onclick="addToCart()">Add to Cart</a>';
-                echo '</div>';
-                echo '</div>';
-              }
+    foreach ($items as $item) {
+        // Start creating the card for each item
+        echo '<div class="card m-2" style="width: 18rem;">';
+        
+        // Image with associated data (size/price) passed in data attributes
+        echo '<img src="uploads/' . htmlspecialchars($item['image']) . '" 
+      class="card-img-top item-image" 
+      alt="' . htmlspecialchars($item['itemName']) . '"
+      data-name="' . htmlspecialchars($item['itemName']) . '" 
+      data-description="' . htmlspecialchars($item['description']) . '" 
+      data-image="uploads/' . htmlspecialchars($item['image']) . '" 
+      data-sizes="' . htmlspecialchars(json_encode($item['sizes']), ENT_QUOTES, 'UTF-8') . '"
+>';
 
-              echo '</div>';
-              echo '</div>';
-              $isActive = false; // Only the first item should be active
-            }
-            ?>
+
+        // Card body with title and "Add to Cart" button
+        echo '<div class="card-body text-center">';
+        echo '<h5 class="card-title">' . htmlspecialchars($item['itemName']) . '</h5>';
+        echo '<button class="button-cart" 
+            onclick="addToCart(this)" 
+            data-id="' . $item['itemId'] . '" 
+            data-name="' . htmlspecialchars($item['itemName'], ENT_QUOTES) . '" 
+            data-image="' . htmlspecialchars($item['image'], ENT_QUOTES) . '" 
+            data-code="' . htmlspecialchars($item['itemName'], ENT_QUOTES) . '" 
+            data-price="' . (isset($item['sizes'][0]['price']) ? $item['sizes'][0]['price'] : 0) . '">
+        Add to Cart
+      </button>';
+
+        echo '</div>'; // Close card-body
+        echo '</div>'; // Close card
+    }
+
+    echo '</div>'; // Close d-flex justify-content-center
+    echo '</div>'; // Close carousel-item
+    $isActive = false; // Ensure only the first item is active in the carousel
+}
+?>
+
           </div>
+
+
           <button class="carousel-control-prev" type="button" data-bs-target="#cardCarousel" data-bs-slide="prev">
             <span class="carousel-control-prev-icon" aria-hidden="true"></span>
             <span class="visually-hidden">Previous</span>
@@ -311,13 +354,13 @@ $conn->close();
       <div class="container ">
         <div class="row" data-aos="fade-up">
           <h1 style="text-align: center;"><span style="color: #fb4a36;">ABOUT </span>US</h1>
-          <h4 style="text-align: center;" class="mb-5">Crafting Memorable Meals!</h4>
+          <h4 style="text-align: center;" class="mb-5">Delighting the Philippines, One Slice at a Time!</h4>
         </div>
         <div class="story-content row mb-2">
           <div class="story-text col-lg-6 col-md-6 col-sm-12 reveal mt-2" data-aos="fade-up" data-os-interval="300">
-            <p>At <strong>Grill 'N' Chill</strong>, we are passionate about celebrating food. Our chefs bring a touch of creativity to every dish, ensuring a feast for your senses. Join us for an extraordinary dining experience that celebrates flavor and joy.</p>
-            <p>Founded in [2020], Grill 'N' Chill has been at the forefront of culinary innovation. Our commitment to using the freshest ingredients, combined with our chefs' expertise, has earned us a reputation for excellence. We believe that dining is not just about eating; it's about experiencing the art of food.</p>
-            <p>Whether you're looking for a romantic dinner, a family gathering, or a place to celebrate special occasions, Grill 'N' Chill offers the perfect ambiance and exquisite cuisine to make your visit unforgettable. Come and experience the joy of flavor with us!</p>
+            <p>At <strong>Alberto’s Pizza</strong>, we take pride in crafting delicious, affordable pizzas that bring people together. Born in the heart of the Philippines, we’ve become a beloved name in local dining—thanks to our generous toppings, flavorful crusts, and budget-friendly prices.</p>
+            <p>Founded in 2002 in Cebu City, Alberto’s Pizza has grown from a humble local shop to a popular pizza destination across the country. Our commitment to quality ingredients, homegrown recipes, and friendly service has earned the trust and love of Filipino families and students alike.</p>
+            <p>Whether you’re celebrating with friends, grabbing a quick bite, or simply craving comfort food, Alberto’s Pizza is your go-to place for great taste at a great value. Come and enjoy the flavor that truly says "Lami gyud!"</p>
             <a href="menu.php" class="about_btn">
               <i class="fa-solid fa-burger"></i>Order Now
             </a>
@@ -383,49 +426,62 @@ $conn->close();
 
   <!-- Review  -->
   <section class="testimonial" id="review">
-    <div class="container">
-      <div class="row">
-        <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
-          <div class="text-center mb-5" data-aos="fade-up">
-            <h1>Hear From Our <span>Happy Customers!</span></h1>
-          </div>
-        </div>
-      </div>
-      <div class="row">
-        <div class="clients-carousel owl-carousel" data-aos="fade-up">
-          <div class="single-box">
-            <div class="img-area"><img alt="" class="img-fluid" src="uploads/user-girl.png"></div>
-            <div class="content">
-              <p>"The food was fresh, and the flavors were incredible. I loved the variety on the menu. A great place for family dinners."</p>
-              <h4>-Ritika Singh</h4>
-            </div>
-          </div>
-          <div class="single-box">
-            <div class="img-area"><img alt="" class="img-fluid" src="uploads/user-boy.jpg"></div>
-            <div class="content">
-              <p>"The online ordering process was seamless and easy to navigate. My food arrived hot and on time. The delivery service was very professional."</p>
-              <h4>-Zidnan</h4>
-            </div>
-          </div>
-          <div class="single-box">
-            <div class="img-area"><img alt="" class="img-fluid" src="uploads/default.jpg"></div>
-            <div class="content">
-              <p>"Fantastic place! The burgers are juicy, and the pizzas are loaded with toppings. The staff is super friendly, and the service is quick. A new favorite spot!"</p>
-              <h4>-Dave Wood</h4>
-            </div>
-          </div>
-          <div class="single-box">
-            <div class="img-area"><img alt="" class="img-fluid" src="uploads/default.jpg"></div>
-            <div class="content">
-              <span class="rating-star"><i class="icofont-star"></i><i class="icofont-star"></i><i class="icofont-star"></i><i class="icofont-star"></i><i class="icofont-star"></i></span>
-              <p>"The online ordering system is fantastic. It’s easy to customize my order, and the delivery is always prompt. The food arrives hot and tasty every time."</p>
-              <h4>-jimmy kimmel</h4>
-            </div>
-          </div>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+        <div class="text-center mb-5" data-aos="fade-up">
+          <h1>Hear From Our <span>Happy Customers!</span></h1>
         </div>
       </div>
     </div>
-  </section>
+    <div class="row">
+      <div class="clients-carousel owl-carousel" data-aos="fade-up">
+      <?php 
+require 'db_connection.php';
+$query = "SELECT * FROM reviews WHERE status = 'approved'";
+$result = $conn->query($query);
+
+if ($result && $result->num_rows > 0) {
+  while ($review = $result->fetch_assoc()) {
+    $image = !empty($review['profile_image']) ? "uploads/" . $review['profile_image'] : "uploads/default.jpg";
+    $videoPath = !empty($review['video_path']) ? "" . $review['video_path'] : null;
+
+    echo '<div class="single-box" style="display: flex; gap: 20px; align-items: center; margin-bottom: 30px;">';
+
+    // Left side: image + review text
+    echo '  <div class="review-content" style="flex: 1;">';
+    echo '    <div class="img-area"><img alt="Reviewer" class="img-fluid" src="' . $image . '" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%;"></div>';
+    echo '      <h4>' . htmlspecialchars($review['email']) . '</h4>';
+    echo '    <div class="content">';
+    echo '      <p style="margin-top: 10px;">"' . htmlspecialchars($review['review_text']) . '"</p>';
+    
+    echo '    </div>';
+    echo '  </div>';
+
+    // Right side: video
+    echo '  <div class="review-video" style="flex-shrink: 0;">';
+    if ($videoPath) {
+      echo '    <video width="300" height="200" controls style="border-radius: 8px;">';
+      echo '      <source src="' . $videoPath . '" type="video/mp4">';
+      echo '      Your browser does not support the video tag.';
+      echo '    </video>';
+    }
+    echo '  </div>';
+
+    echo '</div>';
+  }
+} else {
+  echo '<div class="single-box"><div class="content"><p>No reviews available yet.</p></div></div>';
+}
+?>
+
+
+
+      </div>
+    </div>
+  </div>
+</section>
+
 
   <!-- footer -->
   <footer>
@@ -433,9 +489,9 @@ $conn->close();
       <div class="footer-row">
         <div class="footer-col" id="contact">
           <h4>Contact Us</h4>
-          <p>123 Galle Road, Colombo 04</p>
-          <p>Email: info@grillnchill.com</p>
-          <p>Phone: +94 77 123 4567</p>
+          <p>Fb: albertospizza</p>
+          <p>Email: albertospizzamain</p>
+          <p>Phone: (032) 254 0042</p>
         </div>
         <div class="footer-col">
           <h4>Follow Us</h4>
@@ -455,10 +511,35 @@ $conn->close();
         </div>
       </div>
       <div class="footer-bottom">
-        <h4>&copy; 2024 Authored by Asna Assalam. All Rights Reserved.</h4>
+        <h4> Fast Food WordPress Theme Copyright &copy; 2025 All Rights Reserved.</h4>
       </div>
     </div>
   </footer>
+<!-- Modal for showing price, description, and image -->
+<div class="modal fade" id="itemModal" tabindex="-1" role="dialog" aria-labelledby="itemModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="itemModalLabel">Item Details</h5>
+      </div>
+      <div class="modal-body d-flex flex-column align-items-center">
+        <img id="modalItemImage" src="" alt="Item Image" class="img-fluid mb-3" style="max-width: 300px; max-height: 300px; object-fit: contain;">
+        <h5 id="modalItemName"></h5>
+        <p id="modalItemDescription"></p>
+        <div id="modalItemSize" class="text-center"></div>
+        <div id="modalItemPrice" class="text-center"></div>
+      </div>
+      <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Bootstrap 5 Bundle (includes Popper) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+
 
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -522,15 +603,54 @@ $conn->close();
     });
   </script>
   <script>
-    function addToCart() {
-      var userLoggedIn = <?php echo isset($_SESSION['userloggedin']) ? 'true' : 'false'; ?>;
+function addToCart(button) {
+  const userLoggedIn = <?php echo isset($_SESSION['userloggedin']) ? 'true' : 'false'; ?>;
 
-      if (!userLoggedIn) {
-        showToast();
-      } else {
-        // Add to cart logic goes here
-      }
+  if (!userLoggedIn) {
+    showToast();
+    return;
+  }
+
+  const pid = button.getAttribute('data-id');
+  const pname = button.getAttribute('data-name');
+  const pprice = button.getAttribute('data-price');
+  const pimage = button.getAttribute('data-image');
+  const pcode = button.getAttribute('data-code');
+
+  fetch('add_to_cart.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      pid: pid,
+      pname: pname,
+      pprice: pprice,
+      pimage: pimage,
+      pcode: pcode
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === 'success') {
+      alert(data.message);
+      loadCartItemCount(); // 🔁 Update cart badge count
+    } else {
+      alert(data.message);
     }
+  })
+  .catch(err => {
+    console.error('Error:', err);
+  });
+}
+function loadCartItemCount() {
+  fetch('cart_count.php')
+    .then(res => res.text())
+    .then(count => {
+      document.getElementById('cart-item').textContent = count;
+    })
+    .catch(err => console.error('Cart count error:', err));
+}
+
+document.addEventListener('DOMContentLoaded', loadCartItemCount);
 
     function showToast() {
       var toast = document.getElementById("toast");
@@ -570,6 +690,56 @@ $conn->close();
         observer.observe(element);
       });
     });
+    document.querySelectorAll('.item-image').forEach(image => {
+    image.addEventListener('click', function () {
+        const name = this.getAttribute('data-name');
+        const description = this.getAttribute('data-description');
+        const imgSrc = this.getAttribute('data-image');
+        const sizesJson = this.getAttribute('data-sizes');
+
+        // Update modal fields
+        document.getElementById('modalItemName').innerText = name;
+        document.getElementById('modalItemDescription').innerText = description;
+        document.getElementById('modalItemImage').src = imgSrc;
+
+        const sizeContainer = document.getElementById('modalItemSize');
+        const priceContainer = document.getElementById('modalItemPrice');
+
+        sizeContainer.innerHTML = ''; // Clear previous content
+        priceContainer.innerHTML = ''; // Clear previous content
+
+        if (sizesJson) {
+            try {
+                const sizes = JSON.parse(sizesJson); // Parse the sizes JSON
+                if (sizes.length > 0) {
+                    sizes.forEach(sizeObj => {
+                        // Create new paragraph for size
+                        const sizeText = document.createElement('p');
+                        sizeText.textContent = 'Size: ' + sizeObj.size;
+                        sizeContainer.appendChild(sizeText);
+
+                        // Create new paragraph for price
+                        const priceText = document.createElement('p');
+                        priceText.textContent = 'Price: ₱' + sizeObj.price;
+                        priceContainer.appendChild(priceText);
+                    });
+                } else {
+                    sizeContainer.innerHTML = "<p>No sizes available</p>";
+                    priceContainer.innerHTML = "<p>No prices available</p>";
+                }
+            } catch (err) {
+                console.error('Error parsing JSON for sizes:', err);
+            }
+        } else {
+            sizeContainer.innerHTML = "<p>No size data available</p>";
+            priceContainer.innerHTML = "<p>No price data available</p>";
+        }
+
+        $('#itemModal').modal('show'); // Show modal
+    });
+});
+
+    
   </script>
 
 

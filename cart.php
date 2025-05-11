@@ -9,21 +9,32 @@ if (!isset($_SESSION['userloggedin']) || $_SESSION['userloggedin'] !== true) {
 }
 
 // Get the email from the session
+if (!isset($_SESSION['email'])) {
+  echo "No email found in session.";
+  exit;
+}
+
 $email = $_SESSION['email'];
 
-//fetch user data
-$stmt = $conn->prepare('SELECT * FROM users WHERE email=?');
+// Fetch user data from 'users' table
+$stmt = $conn->prepare('SELECT firstName, lastName FROM users WHERE email = ?');
 $stmt->bind_param('s', $email);
 $stmt->execute();
 $result = $stmt->get_result();
 $user = $result->fetch_assoc();
 
-// Fetch cart items for the logged-in user
+if (!$user) {
+  echo "User not found for email: $email";
+  exit;
+}
+
+// Fetch cart items
 $stmt = $conn->prepare('SELECT * FROM cart WHERE email=?');
 $stmt->bind_param('s', $email);
 $stmt->execute();
 $itemsResult = $stmt->get_result();
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -87,7 +98,7 @@ $itemsResult = $stmt->get_result();
               <div class="mt-1">
                 <div class="d-flex flex-row justify-content-between align-items-start quantity-price">
                   <div>
-                    Rs <span class="item-price"><?= $item['price'] ?></span> x <span class="item-quantity"><?= $item['quantity'] ?></span>
+                    <span class="item-price"><?= $item['size'] ?> ₱ <?= $item['price'] ?></span> x <span class="item-quantity"><?= $item['quantity'] ?></span>
                   </div>
                 </div>
                 <div class="d-flex flex-row justify-content-end align-items-end">
@@ -113,30 +124,30 @@ $itemsResult = $stmt->get_result();
       <hr class="mb-4">
       <div class="summary-details ">
         <p><strong>Subtotal:</strong></p>
-        <p> <span id="subtotal">0</span></p>
+        <p> ₱ <span id="subtotal">0</span></p>
       </div>
       <div class="summary-details payment">
         <p><strong>Payment Method:</strong></p>
         <div>
-          <input type="radio" id="takeaway" name="payment_mode" value="Takeaway" checked>
-          <label for="Takeaway">Takeaway</label>
+          <input type="radio" id="pick_up" name="payment_mode" value="Pick_up" checked>
+          <label for="Pick_up">Pick up</label>
         </div>
         <div>
-          <input type="radio" id="cash" name="payment_mode" value="Cash">
-          <label for="Cash">Cash</label>
+          <input type="radio" id="cod" name="payment_mode" value="COD">
+          <label for="COD">Cash On Delivery</label>
         </div>
         <div>
-          <input type="radio" id="card" name="payment_mode" value="Card" disabled style="cursor: not-allowed;">
-          <label for="Card">Card</label>
+          <input type="radio" id="gcash" name="payment_mode" value="Gcash" >
+          <label for="Gcash">Gcash</label>
         </div>
       </div>
       <div class="summary-details">
         <p><strong>Delivery Fee: </strong></p>
-        <p> <span id="delivery-fee">0</span></p>
+        <p>₱ <span id="delivery-fee">0</span></p>
       </div>
       <div class="summary-details mb-3">
         <p><strong>Total:</strong></p>
-        <p><span id="total">0</span></p>
+        <p>₱ <span id="total">0</span></p>
       </div>
       <hr>
 
@@ -190,7 +201,7 @@ $itemsResult = $stmt->get_result();
       // Function to update delivery fee based on payment mode
       function updateDeliveryFee() {
         const selectedPaymentMode = document.querySelector('input[name="payment_mode"]:checked').value;
-        deliveryFee = selectedPaymentMode === 'Takeaway' ? 0 : 130;
+        deliveryFee = selectedPaymentMode === 'Pick_up' ? 0 : 50;
         updateSummary();
       }
 
