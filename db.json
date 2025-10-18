@@ -1,0 +1,13 @@
+{
+    "users": [
+        {
+        "id": 1,
+        "firstName": "Pyang",
+        "lastName": "pyang@gmail.com",
+        "contact": "9998565989",
+        "password": "pyang123",
+        "profile_image": "Screenshot 2025-05-07 002210.png"
+        }
+    ]
+
+}
