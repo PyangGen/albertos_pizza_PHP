@@ -1,24 +1,21 @@
 {
-    "users": [
-        {
-        "id": "1",
-        "email": "user1@gmail.com",
-        "password": "Password#1"
-        }
-    ],
-
-    "order_items": 
-        {
-            "id": "1",
-            "order_id": "130",
-            "itemName": "Pizza Bianca",
-            "image": "PIZZABIANCA_3ddc317e-0d34-40c0-bfe8-ef786e979378_800x.webp",
-            "quantity": "1",
-            "price": "120",
-            "total_price": "120.00",
-            "size": "9"
-        }
-    
+  "users": [
+    {
+      "id": 1,
+      "email": "user1@gmail.com",
+      "password": "Password#1"
+    }
+  ],
+  "order_items": [
+    {
+      "id": 1,
+      "order_id": 130,
+      "itemName": "Pizza Bianca",
+      "image": "PIZZABIANCA_3ddc317e-0d34-40c0-bfe8-ef786e979378_800x.webp",
+      "quantity": 1,
+      "price": 120,
+      "total_price": 120.00,
+      "size": 9
+    }
+  ]
 }
-
-
